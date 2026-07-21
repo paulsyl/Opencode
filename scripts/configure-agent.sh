@@ -19,6 +19,9 @@ else
   (cd "${ANTIGRAVITY_DIR}" && git pull) || true
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "${SCRIPT_DIR}/link-antigravity-global.sh"
+
 echo "[+] Generating OpenCode configuration at ${OPENCODE_JSON}..."
 cat << 'EOF' > "${OPENCODE_JSON}"
 {
