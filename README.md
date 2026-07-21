@@ -13,7 +13,7 @@ It integrates:
 
 - ⚡ **Zero-Dependency One-Touch Installer**: `./setup-opencode-omniroute.sh` sets up Node 24 runtime, OmniRoute gateway, OpenCode CLI, Antigravity skills, and smart wrapper scripts automatically.
 - 🤖 **Pre-Loaded Antigravity SDLC Agents**: `@architect`, `@executor`, `@review-council`, `@specifier-grill`, `@specifier-prd`, `@orchestrator`, `@prototype`, `@ponytail`, and `@qa-orchestrator` loaded globally by default on every invocation.
-- 🔀 **Smart Auto-Routing**: Dynamically routes requests via `omniroute/auto` or specific model aliases.
+- 🔀 **Smart Auto-Routing & Subagent Model Choice**: Subagents can choose their own models dynamically via `omniroute/auto` or be pinned to dedicated model routes.
 - 🛡️ **Direct Native Fallback**: Automatic fallback to native provider API keys in `~/.config/opencode/env` if the proxy server is offline.
 - 📊 **Web Management Dashboard**: Built-in web UI on `http://localhost:20128` for monitoring request metrics, route performance, and model settings.
 - 🔄 **Unified Updater**: Run `opencode update` to upgrade both OpenCode CLI and the OmniRoute gateway proxy.
@@ -78,9 +78,21 @@ The global configuration file is deployed at `~/.config/opencode/opencode.json` 
     ]
   },
   "agent": {
-    "architect": { "description": "Translate PRD requirements into vertical-sliced technical blueprints", "mode": "all" },
-    "executor": { "description": "Build and implement code phase-by-phase with escape hatch error handling", "mode": "all" },
-    "review-council": { "description": "Multi-persona code review council validating plans against PRDs", "mode": "all" },
+    "architect": {
+      "model": "omniroute/deepseek-r1",
+      "description": "Translate PRD requirements into vertical-sliced technical blueprints",
+      "mode": "all"
+    },
+    "executor": {
+      "model": "omniroute/gemini-2.0-flash",
+      "description": "Build and implement code phase-by-phase with escape hatch error handling",
+      "mode": "all"
+    },
+    "review-council": {
+      "model": "omniroute/claude-3.5-sonnet",
+      "description": "Multi-persona code review council validating plans against PRDs",
+      "mode": "all"
+    },
     "specifier-grill": { "description": "Interactive round-based interview grilling for requirements alignment", "mode": "all" },
     "specifier-prd": { "description": "Generates canonical Product Requirements Document (PRD)", "mode": "all" },
     "orchestrator": { "description": "Chains full SDLC pipeline automatically", "mode": "all" },
@@ -126,7 +138,7 @@ OmniRoute features an interactive Web UI for managing routes and monitoring API 
 
 ---
 
-## 💻 Usage
+## 💻 Usage & Subagent Model Assignment
 
 ### 1. Launching OpenCode CLI
 
@@ -151,23 +163,71 @@ opencode -m omniroute/deepseek-r1
 | `omniroute/claude-3.5-sonnet` | Anthropic Claude 3.5 Sonnet |
 | `omniroute/gpt-4o` | OpenAI GPT-4o |
 
-### 3. Antigravity Agents & Skills Invocation
+---
+
+### 3. Assigning Models to Subagents
+
+Subagents can either choose their models dynamically through OmniRoute's auto-router or be pinned to specific model routes.
+
+#### Method A: Dynamic Auto-Routing (Default)
+When `"model": "omniroute/auto"` is set, subagents send requests to OmniRoute's **Auto-Router**. OmniRoute inspects the subagent's task (e.g. reasoning vs code generation vs review) and dynamically selects the best model.
+
+#### Method B: Pinning Models to Agents in `opencode.json`
+To assign specific models to specific agents permanently, add `"model"` to the agent entry in `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "agent": {
+    "architect": {
+      "model": "omniroute/deepseek-r1",
+      "description": "Uses DeepSeek R1 reasoning for architecture blueprints"
+    },
+    "executor": {
+      "model": "omniroute/gemini-2.0-flash",
+      "description": "Uses Gemini 2.0 Flash for fast code implementation"
+    },
+    "review-council": {
+      "model": "omniroute/claude-3.5-sonnet",
+      "description": "Uses Claude 3.5 Sonnet for code reviews"
+    }
+  }
+}
+```
+
+#### Method C: CLI Runtime Override
+Override any subagent's model directly on command line invocation:
+
+```bash
+# List all available models
+opencode models
+
+# Run a specific subagent with a specific model
+opencode --agent architect --model omniroute/deepseek-r1
+opencode --agent executor --model omniroute/gemini-2.0-flash
+opencode --agent review-council --model omniroute/claude-3.5-sonnet
+```
+
+---
+
+### 4. Antigravity Agents & Skills Invocation
 
 All Antigravity agents are available globally in every session:
 
-| Agent / Skill | Trigger / Command | Purpose |
-| :--- | :--- | :--- |
-| **Specifier Grill** | `@specifier-grill` | Interactive interview grilling to align requirements |
-| **Specifier PRD** | `@specifier-prd` | Generates immutable Product Requirements Document |
-| **Architect** | `@architect` | Translates PRDs into vertical-sliced technical blueprints |
-| **Review Council** | `@review-council` | Multi-persona adversarial review council (Security, Data, Scope, Tests) |
-| **Executor** | `@executor` | Phase-by-phase implementation builder with escape hatch handling |
-| **Orchestrator** | `@orchestrator` | Chains full 4-Stage SDLC pipeline automatically |
-| **Prototype** | `@prototype` | Rapid throwaway exploration without ceremony |
-| **Ponytail** | `@ponytail` | Enforces lazy senior dev principles (YAGNI, minimal code) |
-| **QA Orchestrator**| `@qa-orchestrator` | Black-box QA pipeline testing against PRDs |
+| Agent / Skill | Trigger / Command | Default / Preferred Model | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Specifier Grill** | `@specifier-grill` | `omniroute/auto` | Interactive interview grilling to align requirements |
+| **Specifier PRD** | `@specifier-prd` | `omniroute/auto` | Generates immutable Product Requirements Document |
+| **Architect** | `@architect` | `omniroute/deepseek-r1` | Translates PRDs into vertical-sliced technical blueprints |
+| **Review Council** | `@review-council` | `omniroute/claude-3.5-sonnet` | Multi-persona adversarial review council (Security, Data, Scope, Tests) |
+| **Executor** | `@executor` | `omniroute/gemini-2.0-flash` | Phase-by-phase implementation builder with escape hatch handling |
+| **Orchestrator** | `@orchestrator` | `omniroute/auto` | Chains full 4-Stage SDLC pipeline automatically |
+| **Prototype** | `@prototype` | `omniroute/auto` | Rapid throwaway exploration without ceremony |
+| **Ponytail** | `@ponytail` | `omniroute/auto` | Enforces lazy senior dev principles (YAGNI, minimal code) |
+| **QA Orchestrator**| `@qa-orchestrator` | `omniroute/auto` | Black-box QA pipeline testing against PRDs |
 
-### 4. Updating & Maintenance
+---
+
+### 5. Updating & Maintenance
 
 To update both OpenCode CLI and the OmniRoute gateway to the latest releases:
 
