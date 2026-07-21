@@ -124,6 +124,12 @@ if ! is_healthy; then
   fi
 fi
 
+# Ensure agent models are in sync with SKILL.md front matter
+SYNC_SCRIPT="${HOME}/.local/bin/sync-agent-frontmatter.py"
+if [ -f "${SYNC_SCRIPT}" ] && command -v python3 &>/dev/null; then
+  python3 "${SYNC_SCRIPT}" >/dev/null 2>&1 || true
+fi
+
 START_TIME_MS="$(date +%s%3N 2>/dev/null || node -e 'console.log(Date.now())')"
 
 EXIT_CODE=0

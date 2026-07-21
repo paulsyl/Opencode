@@ -214,4 +214,7 @@ fi
 echo "[+] Validating opencode.json schema..."
 node -e "JSON.parse(require('fs').readFileSync(process.env.HOME + '/.config/opencode/opencode.json'))"
 
+echo "[+] Syncing agent model selections from SKILL.md front matter..."
+python3 "${SCRIPT_DIR}/sync-agent-frontmatter.py" || true
+
 echo "OpenCode configuration deployed successfully."
