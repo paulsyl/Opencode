@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ponytail: minimal smart launcher wrapper for opencode with post-task metrics
+# ponytail: minimal smart launcher wrapper for opencode with post-task metrics & CLI reporting
 export PATH="${HOME}/.local/bin:${PATH}"
 
 OMNI_DIR="${HOME}/.omniroute"
@@ -28,6 +28,16 @@ update_all() {
 
 if [ "${1:-}" = "update" ] || [ "${1:-}" = "upgrade" ]; then
   update_all
+  exit 0
+fi
+
+if [ "${1:-}" = "metrics" ] || [ "${1:-}" = "stats" ] || [ "${1:-}" = "usage" ]; then
+  METRICS_SCRIPT="${HOME}/.local/bin/opencode-metrics.py"
+  if [ -f "${METRICS_SCRIPT}" ] && command -v python3 &>/dev/null; then
+    python3 "${METRICS_SCRIPT}" "${@:2}"
+  else
+    echo "Error: opencode-metrics.py is missing or python3 is not installed." >&2
+  fi
   exit 0
 fi
 
