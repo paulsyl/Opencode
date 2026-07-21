@@ -86,6 +86,7 @@ cat << 'EOF' > "${OPENCODE_JSON}"
       "models": {
         "auto": {
           "name": "OmniRoute Auto Router",
+          "reasoning": true,
           "limit": {
             "context": 200000,
             "output": 8192
