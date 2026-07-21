@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ponytail: minimal smart launcher wrapper for opencode
+# ponytail: minimal smart launcher wrapper for opencode with post-task metrics
 export PATH="${HOME}/.local/bin:${PATH}"
 
 OMNI_DIR="${HOME}/.omniroute"
@@ -74,9 +74,18 @@ if ! is_healthy; then
   fi
 fi
 
+START_TIME_MS="$(date +%s%3N 2>/dev/null || node -e 'console.log(Date.now())')"
+
+EXIT_CODE=0
 if [ -x "${OPENCODE_CORE}" ]; then
-  exec "${OPENCODE_CORE}" "$@"
+  "${OPENCODE_CORE}" "$@" || EXIT_CODE=$?
 else
   echo "[+] Executing OpenCode command with OmniRoute gateway..."
-  exit 0
 fi
+
+METRICS_SCRIPT="${HOME}/.local/bin/opencode-metrics.py"
+if [ -f "${METRICS_SCRIPT}" ] && command -v python3 &>/dev/null; then
+  python3 "${METRICS_SCRIPT}" "${START_TIME_MS}" || true
+fi
+
+exit "${EXIT_CODE}"
