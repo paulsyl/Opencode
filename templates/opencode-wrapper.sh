@@ -41,8 +41,9 @@ if ! is_healthy; then
   echo "[+] Starting OmniRoute local gateway daemon..."
   mkdir -p "${OMNI_DIR}/log"
   (
+    export PATH="${HOME}/.local/bin:${PATH}"
     cd "${OMNI_DIR}"
-    PORT="${OMNI_PORT}" NODE_ENV=development OMNIROUTE_USE_TURBOPACK=0 nohup node scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
+    PORT="${OMNI_PORT}" NODE_ENV=development nohup "${HOME}/.local/bin/node" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
   )
 
   for i in {1..10}; do

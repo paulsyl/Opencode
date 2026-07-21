@@ -5,10 +5,10 @@ set -euo pipefail
 export PATH="${HOME}/.local/bin:${PATH}"
 
 NODE_VER="$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1 || echo "0")"
-if [ "${NODE_VER}" -lt 20 ]; then
-  echo "[+] Upgrading Node.js to 22 LTS in ${HOME}/.local/bin..."
+if [ "${NODE_VER}" -lt 24 ]; then
+  echo "[+] Upgrading Node.js to 24 LTS in ${HOME}/.local/bin..."
   mkdir -p "${HOME}/.local"
-  curl -fsSL https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.xz | tar -xJ -C "${HOME}/.local" --strip-components=1
+  curl -fsSL https://nodejs.org/dist/v24.0.0/node-v24.0.0-linux-x64.tar.xz | tar -xJ -C "${HOME}/.local" --strip-components=1
 fi
 
 OMNI_DIR="${HOME}/.omniroute"
