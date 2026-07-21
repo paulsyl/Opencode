@@ -29,14 +29,12 @@ cat << 'EOF' > "${OPENCODE_JSON}"
   "model": "omniroute/auto",
   "small_model": "omniroute/auto",
   "instructions": [
-    "/home/paulsyl/.config/opencode/antigravity/GEMINI.md",
-    "/home/paulsyl/.config/opencode/antigravity/plugins/core-workflow/rules/global_gemini_rules.md"
+    "/home/paulsyl/.config/opencode/instructions/GEMINI.md",
+    "/home/paulsyl/.config/opencode/instructions/global_gemini_rules.md"
   ],
   "skills": {
     "paths": [
-      "/home/paulsyl/.config/opencode/antigravity/plugins/core-workflow/skills/*",
-      "/home/paulsyl/.config/opencode/antigravity/plugins/qa-workflow/skills/*",
-      "/home/paulsyl/.config/opencode/antigravity/plugins/ponytail/skills/*"
+      "/home/paulsyl/.config/opencode/skills"
     ]
   },
   "agent": {
