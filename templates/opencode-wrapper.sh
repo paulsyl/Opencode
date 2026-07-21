@@ -40,13 +40,22 @@ is_healthy() {
 if ! is_healthy; then
   echo "[+] Starting OmniRoute local gateway daemon..."
   mkdir -p "${OMNI_DIR}/log"
+  
+  NODE_BIN="${HOME}/.local/bin/node"
+  NODE_VER="$("${NODE_BIN}" -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1 || echo "0")"
+  if [ "${NODE_VER}" -lt 24 ]; then
+    echo "[+] Provisioning Node 24 LTS runtime..."
+    mkdir -p "${HOME}/.local"
+    curl -fsSL https://nodejs.org/dist/v24.0.0/node-v24.0.0-linux-x64.tar.xz | tar -xJ -C "${HOME}/.local" --strip-components=1
+  fi
+
   (
     export PATH="${HOME}/.local/bin:${PATH}"
     cd "${OMNI_DIR}"
-    PORT="${OMNI_PORT}" NODE_ENV=development nohup "${HOME}/.local/bin/node" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
+    PORT="${OMNI_PORT}" NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
   )
 
-  for i in {1..10}; do
+  for i in {1..12}; do
     sleep 0.5
     if is_healthy; then
       echo "[+] OmniRoute gateway active on port ${OMNI_PORT}."
@@ -55,7 +64,13 @@ if ! is_healthy; then
   done
 
   if ! is_healthy; then
-    echo "[!] Warning: OmniRoute daemon start timed out (>5s). Falling back to direct native provider credentials." >&2
+    echo "[!] Clearing build cache to heal dev compilation..."
+    rm -rf "${OMNI_DIR}/.build"
+    (
+      export PATH="${HOME}/.local/bin:${PATH}"
+      cd "${OMNI_DIR}"
+      PORT="${OMNI_PORT}" NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
+    )
   fi
 fi
 

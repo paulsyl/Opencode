@@ -106,6 +106,14 @@ cat << 'EOF' > "${OPENCODE_JSON}"
             "output": 8192
           }
         },
+        "deepseek-v4": {
+          "name": "DeepSeek V4",
+          "reasoning": true,
+          "limit": {
+            "context": 512000,
+            "output": 32768
+          }
+        },
         "gemini-2.0-flash": {
           "name": "Gemini 2.0 Flash",
           "limit": {
@@ -150,6 +158,14 @@ cat << 'EOF' > "${OPENCODE_JSON}"
           "limit": {
             "context": 128000,
             "output": 8192
+          }
+        },
+        "deepseek-v4": {
+          "name": "DeepSeek V4",
+          "reasoning": true,
+          "limit": {
+            "context": 512000,
+            "output": 32768
           }
         },
         "deepseek-chat": {
