@@ -10,12 +10,70 @@ mkdir -p "${CONFIG_DIR}"
 OPENCODE_JSON="${CONFIG_DIR}/opencode.json"
 FALLBACK_ENV="${CONFIG_DIR}/env"
 
+ANTIGRAVITY_DIR="${CONFIG_DIR}/antigravity"
+if [ ! -d "${ANTIGRAVITY_DIR}" ]; then
+  echo "[+] Cloning Antigravity agents repository..."
+  git clone https://github.com/paulsyl/Antigravity.git "${ANTIGRAVITY_DIR}" || true
+else
+  echo "[+] Syncing Antigravity agents repository..."
+  (cd "${ANTIGRAVITY_DIR}" && git pull) || true
+fi
+
 echo "[+] Generating OpenCode configuration at ${OPENCODE_JSON}..."
 cat << 'EOF' > "${OPENCODE_JSON}"
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "omniroute/auto",
   "small_model": "omniroute/auto",
+  "instructions": [
+    "/home/paulsyl/.config/opencode/antigravity/GEMINI.md",
+    "/home/paulsyl/.config/opencode/antigravity/plugins/core-workflow/rules/global_gemini_rules.md"
+  ],
+  "skills": {
+    "paths": [
+      "/home/paulsyl/.config/opencode/antigravity/plugins/core-workflow/skills/*",
+      "/home/paulsyl/.config/opencode/antigravity/plugins/qa-workflow/skills/*",
+      "/home/paulsyl/.config/opencode/antigravity/plugins/ponytail/skills/*"
+    ]
+  },
+  "agent": {
+    "architect": {
+      "description": "Translate PRD requirements into vertical-sliced technical blueprints",
+      "mode": "all"
+    },
+    "executor": {
+      "description": "Build and implement code phase-by-phase with escape hatch error handling",
+      "mode": "all"
+    },
+    "review-council": {
+      "description": "Multi-persona code review council validating plans against PRDs",
+      "mode": "all"
+    },
+    "specifier-grill": {
+      "description": "Interactive round-based interview grilling for requirements alignment",
+      "mode": "all"
+    },
+    "specifier-prd": {
+      "description": "Generates canonical Product Requirements Document (PRD)",
+      "mode": "all"
+    },
+    "orchestrator": {
+      "description": "Chains full SDLC pipeline automatically (Specifier -> Architect -> Review -> Executor)",
+      "mode": "all"
+    },
+    "prototype": {
+      "description": "Throwaway rapid exploration without ceremony",
+      "mode": "all"
+    },
+    "ponytail": {
+      "description": "Enforces minimal, lazy, zero-boilerplate code standards (YAGNI)",
+      "mode": "all"
+    },
+    "qa-orchestrator": {
+      "description": "Runs black-box QA testing pipeline against PRD requirements",
+      "mode": "all"
+    }
+  },
   "provider": {
     "omniroute": {
       "name": "OmniRoute Gateway",
