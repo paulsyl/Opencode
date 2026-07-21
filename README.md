@@ -17,7 +17,7 @@ It integrates:
 - 🔀 **Smart Auto-Routing & Subagent Model Choice**: Subagents can choose their own models dynamically via `omniroute/auto` or be pinned to dedicated model routes.
 - 🛡️ **Direct Native Fallback**: Automatic fallback to native provider API keys in `~/.config/opencode/env` if the proxy server is offline.
 - 📊 **Web Management Dashboard**: Built-in web UI on `http://localhost:20128` for monitoring request metrics, route performance, and model settings.
-- 📈 **Post-Task Execution Metrics**: Displays a formatted, colorized terminal summary box after every task detailing the model(s) used, prompt/completion/cached token counts, total API calls, execution duration, and estimated cost.
+- 📈 **Post-Task Execution Metrics**: Displays a formatted, colorized terminal summary box after every task detailing the model(s) used, prompt/completion/cached token counts, total API calls, execution duration, and estimated cost (enabled by default; toggle off anytime via `opencode metrics off` or `OPENCODE_METRICS=0`).
 - 🔄 **Unified Updater**: Run `opencode update` to upgrade both OpenCode CLI and the OmniRoute gateway proxy.
 
 ---

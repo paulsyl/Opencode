@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ponytail: minimal smart launcher wrapper for opencode with post-task metrics & CLI reporting
+# ponytail: minimal smart launcher wrapper for opencode with post-task metrics & toggle support
 export PATH="${HOME}/.local/bin:${PATH}"
+
+CONFIG_ENV="${HOME}/.config/opencode/env"
+if [ -f "${CONFIG_ENV}" ]; then
+  # Load env variables (such as OPENCODE_METRICS)
+  set -a
+  source "${CONFIG_ENV}" 2>/dev/null || true
+  set +a
+fi
 
 OMNI_DIR="${HOME}/.omniroute"
 OMNI_PORT="${PORT:-20128}"
@@ -31,7 +39,39 @@ if [ "${1:-}" = "update" ] || [ "${1:-}" = "upgrade" ]; then
   exit 0
 fi
 
+# Subcommand: opencode metrics [off|on|disable|enable|status|model]
 if [ "${1:-}" = "metrics" ] || [ "${1:-}" = "stats" ] || [ "${1:-}" = "usage" ]; then
+  SUB_CMD="${2:-}"
+  mkdir -p "${HOME}/.config/opencode"
+  
+  if [ "${SUB_CMD}" = "off" ] || [ "${SUB_CMD}" = "disable" ]; then
+    touch "${CONFIG_ENV}"
+    if grep -q "^OPENCODE_METRICS=" "${CONFIG_ENV}"; then
+      sed -i 's/^OPENCODE_METRICS=.*/OPENCODE_METRICS="0"/' "${CONFIG_ENV}"
+    else
+      echo 'OPENCODE_METRICS="0"' >> "${CONFIG_ENV}"
+    fi
+    echo "[+] Post-task execution metrics reporting disabled (saved to ${CONFIG_ENV})."
+    exit 0
+  elif [ "${SUB_CMD}" = "on" ] || [ "${SUB_CMD}" = "enable" ]; then
+    touch "${CONFIG_ENV}"
+    if grep -q "^OPENCODE_METRICS=" "${CONFIG_ENV}"; then
+      sed -i 's/^OPENCODE_METRICS=.*/OPENCODE_METRICS="1"/' "${CONFIG_ENV}"
+    else
+      echo 'OPENCODE_METRICS="1"' >> "${CONFIG_ENV}"
+    fi
+    echo "[+] Post-task execution metrics reporting enabled (saved to ${CONFIG_ENV})."
+    exit 0
+  elif [ "${SUB_CMD}" = "status" ]; then
+    VAL="${OPENCODE_METRICS:-1}"
+    if [ "${VAL}" = "0" ] || [ "${VAL}" = "false" ] || [ "${VAL}" = "off" ]; then
+      echo "Post-task metrics reporting: DISABLED"
+    else
+      echo "Post-task metrics reporting: ENABLED (Default)"
+    fi
+    exit 0
+  fi
+
   METRICS_SCRIPT="${HOME}/.local/bin/opencode-metrics.py"
   if [ -f "${METRICS_SCRIPT}" ] && command -v python3 &>/dev/null; then
     python3 "${METRICS_SCRIPT}" "${@:2}"
@@ -93,9 +133,15 @@ else
   echo "[+] Executing OpenCode command with OmniRoute gateway..."
 fi
 
+# Post-task execution metrics (if enabled)
 METRICS_SCRIPT="${HOME}/.local/bin/opencode-metrics.py"
-if [ -f "${METRICS_SCRIPT}" ] && command -v python3 &>/dev/null; then
-  python3 "${METRICS_SCRIPT}" "${START_TIME_MS}" || true
+IS_DISABLED="${OPENCODE_DISABLE_METRICS:-0}"
+METRICS_ENABLED="${OPENCODE_METRICS:-1}"
+
+if [ "${METRICS_ENABLED}" != "0" ] && [ "${METRICS_ENABLED}" != "false" ] && [ "${METRICS_ENABLED}" != "off" ] && [ "${IS_DISABLED}" != "1" ]; then
+  if [ -f "${METRICS_SCRIPT}" ] && command -v python3 &>/dev/null; then
+    python3 "${METRICS_SCRIPT}" "${START_TIME_MS}" || true
+  fi
 fi
 
 exit "${EXIT_CODE}"
