@@ -13,41 +13,63 @@ FALLBACK_ENV="${CONFIG_DIR}/env"
 echo "[+] Generating OpenCode configuration at ${OPENCODE_JSON}..."
 cat << 'EOF' > "${OPENCODE_JSON}"
 {
-  "$schema": "https://opencode.ai/config.schema.json",
-  "providers": {
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
     "omniroute": {
-      "type": "openai-compatible",
-      "baseUrl": "http://localhost:20128/v1",
-      "apiKey": "omniroute-local"
+      "name": "OmniRoute Gateway",
+      "npm": "@ai-sdk/openai",
+      "options": {
+        "baseURL": "http://localhost:20128/v1",
+        "apiKey": "omniroute-local"
+      },
+      "models": {
+        "auto": {
+          "name": "OmniRoute Auto Router",
+          "limit": {
+            "context": 200000,
+            "output": 8192
+          }
+        },
+        "deepseek-r1": {
+          "name": "DeepSeek R1",
+          "reasoning": true,
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          }
+        },
+        "deepseek-v3": {
+          "name": "DeepSeek V3",
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          }
+        },
+        "gemini-2.0-flash": {
+          "name": "Gemini 2.0 Flash",
+          "limit": {
+            "context": 1000000,
+            "output": 8192
+          }
+        },
+        "claude-3.5-sonnet": {
+          "name": "Claude 3.5 Sonnet",
+          "limit": {
+            "context": 200000,
+            "output": 8192
+          }
+        },
+        "gpt-4o": {
+          "name": "GPT-4o",
+          "limit": {
+            "context": 128000,
+            "output": 4096
+          }
+        }
+      }
     }
   },
-  "models": {
-    "omniroute/auto": {
-      "provider": "omniroute",
-      "model": "auto"
-    },
-    "omniroute/deepseek-r1": {
-      "provider": "omniroute",
-      "model": "deepseek-r1"
-    },
-    "omniroute/deepseek-v3": {
-      "provider": "omniroute",
-      "model": "deepseek-v3"
-    },
-    "omniroute/gemini-2.0-flash": {
-      "provider": "omniroute",
-      "model": "gemini-2.0-flash"
-    },
-    "omniroute/claude-3.5-sonnet": {
-      "provider": "omniroute",
-      "model": "claude-3.5-sonnet"
-    },
-    "omniroute/gpt-4o": {
-      "provider": "omniroute",
-      "model": "gpt-4o"
-    }
-  },
-  "default_model": "omniroute/auto"
+  "model": "omniroute/auto"
 }
 EOF
 chmod 600 "${OPENCODE_JSON}"
