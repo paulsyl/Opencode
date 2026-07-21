@@ -12,6 +12,7 @@ It integrates:
 ## 🚀 Features
 
 - ⚡ **Zero-Dependency One-Touch Installer**: `./setup-opencode-omniroute.sh` sets up Node 24 runtime, OmniRoute gateway, OpenCode CLI, Antigravity skills, and smart wrapper scripts automatically.
+- 🧠 **Visual Cognitive Thinking Indicator**: Renders live thinking spinners (`🧠 Thinking (12.4s, 3,420 tokens)`) and completion checkmarks (`✓`) the moment LLM reasoning completes.
 - 🤖 **Pre-Loaded Antigravity SDLC Agents**: `@architect`, `@executor`, `@review-council`, `@specifier-grill`, `@specifier-prd`, `@orchestrator`, `@prototype`, `@ponytail`, and `@qa-orchestrator` loaded globally by default on every invocation.
 - 🔀 **Smart Auto-Routing & Subagent Model Choice**: Subagents can choose their own models dynamically via `omniroute/auto` or be pinned to dedicated model routes.
 - 🛡️ **Direct Native Fallback**: Automatic fallback to native provider API keys in `~/.config/opencode/env` if the proxy server is offline.
@@ -61,7 +62,7 @@ OPENAI_API_KEY="your-openai-key"
 
 ### 2. OpenCode Configuration Schema
 
-The global configuration file is deployed at `~/.config/opencode/opencode.json` (OpenCode v1.18 schema):
+The global configuration file is deployed at `~/.config/opencode/opencode.json` (OpenCode v1.18 schema with `"reasoning": true` enabled for cognitive thinking indicators):
 
 ```json
 {
@@ -107,22 +108,18 @@ The global configuration file is deployed at `~/.config/opencode/opencode.json` 
       "options": {
         "baseURL": "http://localhost:20128/v1",
         "apiKey": "omniroute-local"
-      }
-    },
-    "deepseek": {
-      "name": "DeepSeek (via OmniRoute)",
-      "npm": "@ai-sdk/openai",
-      "options": {
-        "baseURL": "http://localhost:20128/v1",
-        "apiKey": "omniroute-local"
-      }
-    },
-    "codex": {
-      "name": "Codex (via OmniRoute)",
-      "npm": "@ai-sdk/openai",
-      "options": {
-        "baseURL": "http://localhost:20128/v1",
-        "apiKey": "omniroute-local"
+      },
+      "models": {
+        "auto": {
+          "name": "OmniRoute Auto Router",
+          "reasoning": true,
+          "limit": { "context": 200000, "output": 8192 }
+        },
+        "deepseek-r1": {
+          "name": "DeepSeek R1",
+          "reasoning": true,
+          "limit": { "context": 128000, "output": 8192 }
+        }
       }
     }
   }
@@ -152,16 +149,24 @@ opencode
 opencode -m omniroute/deepseek-r1
 ```
 
-### 2. Available Model Profile Aliases
+---
 
-| Model Alias | Target LLM Provider / Route |
-| :--- | :--- |
-| `omniroute/auto` | Intelligent Cost & Latency Auto-Router |
-| `omniroute/deepseek-r1` | DeepSeek R1 Reasoning |
-| `omniroute/deepseek-v3` | DeepSeek V3 Chat |
-| `omniroute/gemini-2.0-flash` | Google Gemini 2.0 Flash |
-| `omniroute/claude-3.5-sonnet` | Anthropic Claude 3.5 Sonnet |
-| `omniroute/gpt-4o` | OpenAI GPT-4o |
+### 2. Visual Cognitive Thinking Completion Indicator
+
+When invoking reasoning models (such as **DeepSeek R1**) or reasoning-enabled routes (`omniroute/auto`), OpenCode CLI displays a visual thinking indicator in real time:
+
+- **During Thinking**:
+  Shows a live spinner and token counter:
+  ```text
+  🧠 Thinking (12.4s, 3,420 reasoning tokens)...
+  ```
+
+- **Upon Thinking Completion**:
+  As soon as reasoning completes and final output generation starts, the indicator collapses with a green checkmark:
+  ```text
+  🧠 Thinking (12.4s, 3,420 tokens) ✓
+  ```
+  The CLI then immediately streams the generated response and code changes.
 
 ---
 

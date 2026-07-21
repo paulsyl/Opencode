@@ -10,20 +10,22 @@ Inside your WSL Ubuntu terminal, run:
 ./setup-opencode-omniroute.sh
 ```
 
-The installer automatically installs Node 24, clones OmniRoute to `~/.omniroute`, downloads OpenCode CLI binary to `~/.local/bin/opencode-core`, syncs Antigravity skills to `~/.config/opencode/skills`, configures `~/.config/opencode/opencode.json`, and links the `opencode` launcher wrapper.
+The installer automatically installs Node 24, clones OmniRoute to `~/.omniroute`, downloads OpenCode CLI binary to `~/.local/bin/opencode-core`, syncs Antigravity skills to `~/.config/opencode/skills`, configures `~/.config/opencode/opencode.json` with cognitive thinking indicators (`"reasoning": true`), and links the `opencode` launcher wrapper.
 
 ---
 
-### 2. Configure API Keys
+### 2. Visual Cognitive Thinking Indicator
 
-Open the local OmniRoute Web Dashboard to configure provider keys:
-- **Dashboard URL:** `http://localhost:20128`
-- **Default Password:** `CHANGEME`
+When executing reasoning models (e.g., **DeepSeek R1**) or auto-routing (`omniroute/auto`), OpenCode CLI displays a visual thinking completion indicator:
 
-Or edit the direct fallback credentials file:
-```bash
-nano ~/.config/opencode/env
-```
+- **Thinking In Progress**:
+  ```text
+  🧠 Thinking (12.4s, 3,420 reasoning tokens)...
+  ```
+- **Thinking Completed**:
+  ```text
+  🧠 Thinking (12.4s, 3,420 tokens) ✓
+  ```
 
 ---
 
