@@ -14,6 +14,8 @@ echo "[+] Generating OpenCode configuration at ${OPENCODE_JSON}..."
 cat << 'EOF' > "${OPENCODE_JSON}"
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "omniroute/auto",
+  "small_model": "omniroute/auto",
   "provider": {
     "omniroute": {
       "name": "OmniRoute Gateway",
@@ -67,9 +69,56 @@ cat << 'EOF' > "${OPENCODE_JSON}"
           }
         }
       }
+    },
+    "deepseek": {
+      "name": "DeepSeek (via OmniRoute)",
+      "npm": "@ai-sdk/openai",
+      "options": {
+        "baseURL": "http://localhost:20128/v1",
+        "apiKey": "omniroute-local"
+      },
+      "models": {
+        "deepseek-r1": {
+          "name": "DeepSeek R1",
+          "reasoning": true,
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          }
+        },
+        "deepseek-v3": {
+          "name": "DeepSeek V3",
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          }
+        },
+        "deepseek-chat": {
+          "name": "DeepSeek Chat",
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          }
+        },
+        "deepseek-reasoner": {
+          "name": "DeepSeek Reasoner",
+          "reasoning": true,
+          "limit": {
+            "context": 128000,
+            "output": 8192
+          }
+        }
+      }
+    },
+    "codex": {
+      "name": "Codex (via OmniRoute)",
+      "npm": "@ai-sdk/openai",
+      "options": {
+        "baseURL": "http://localhost:20128/v1",
+        "apiKey": "omniroute-local"
+      }
     }
-  },
-  "model": "omniroute/auto"
+  }
 }
 EOF
 chmod 600 "${OPENCODE_JSON}"
