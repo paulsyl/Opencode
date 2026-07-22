@@ -1,12 +1,12 @@
 {
   "version": "1.0",
   "mappings": {
-    "architect": "deepseek/deepseek-reasoner",
+    "architect": "gemini/claude-3-opus",
     "executor": "gemini/gemini-2.5-pro",
-    "specifier-grill": "gemini/gemini-2.5-pro",
+    "specifier-grill": "gemini/claude-3-opus",
     "specifier-prd": "gemini/gemini-2.5-pro",
     "review-council": "deepseek/deepseek-reasoner",
-    "prototype": "gemini/gemini-2.5-pro"
+    "prototype": "deepseek/deepseek-chat"
   },
   "fallbacks": {
     "default": "gemini/gemini-2.5-pro"

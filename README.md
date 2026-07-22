@@ -83,13 +83,13 @@ Mappings are persisted atomically to `.agents/agent-models.json` and synced to `
 
 | Agent / Skill | Trigger / Command | Default / Preferred Model | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Specifier Grill** | `@specifier-grill` | `gemini/gemini-2.5-pro` | Interactive interview grilling to align requirements |
+| **Specifier Grill** | `@specifier-grill` | `gemini/claude-3-opus` | Interactive interview grilling to align requirements |
 | **Specifier PRD** | `@specifier-prd` | `gemini/gemini-2.5-pro` | Generates canonical Product Requirements Document |
-| **Architect** | `@architect` | `deepseek/deepseek-reasoner` | Translates PRDs into vertical-sliced technical blueprints |
+| **Architect** | `@architect` | `gemini/claude-3-opus` | Translates PRDs into vertical-sliced technical blueprints |
 | **Review Council** | `@review-council` | `deepseek/deepseek-reasoner` | Multi-persona adversarial review council (Security, Data, Scope, Tests) |
 | **Executor** | `@executor` | `gemini/gemini-2.5-pro` | Phase-by-phase implementation builder with escape hatch handling |
 | **Orchestrator** | `@orchestrator` | `gemini/gemini-2.5-pro` | Chains full SDLC pipeline automatically |
-| **Prototype** | `@prototype` | `gemini/gemini-2.5-pro` | Rapid throwaway exploration without ceremony |
+| **Prototype** | `@prototype` | `deepseek/deepseek-chat` | Rapid throwaway exploration without ceremony |
 | **Ponytail** | `@ponytail` | `gemini/gemini-2.5-pro` | Enforces minimal, lazy, zero-boilerplate code standards (YAGNI) |
 | **QA Orchestrator**| `@qa-orchestrator` | `gemini/gemini-2.5-pro` | Black-box QA pipeline testing against PRDs |
 
