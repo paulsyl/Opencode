@@ -110,6 +110,11 @@ if ! is_healthy; then
 
   (
     export PATH="${HOME}/.local/bin:${PATH}"
+    if [ -f "${CONFIG_ENV}" ]; then
+      set -a
+      source "${CONFIG_ENV}" 2>/dev/null || true
+      set +a
+    fi
     export NODE_OPTIONS="--max-old-space-size=512 --no-warnings"
     cd "${OMNI_DIR}"
     PORT="${OMNI_PORT}" HOST=127.0.0.1 NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
