@@ -20,6 +20,10 @@ chmod +x "${TARGET_METRICS}"
 cp "${REPO_DIR}/scripts/sync-agent-frontmatter.py" "${TARGET_SYNC}"
 chmod +x "${TARGET_SYNC}"
 
+if [ -f "${REPO_DIR}/scripts/agent-discovery.js" ]; then
+  cp "${REPO_DIR}/scripts/agent-discovery.js" "${HOME}/.local/bin/agent-discovery.js"
+fi
+
 if [ -f "${REPO_DIR}/scripts/agent-map-cli.js" ]; then
   cp "${REPO_DIR}/scripts/agent-map-cli.js" "${HOME}/.local/bin/agent-map-cli.js"
   chmod +x "${HOME}/.local/bin/agent-map-cli.js"
