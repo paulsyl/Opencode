@@ -86,12 +86,18 @@ function fetchModels(callback) {
     'claude-sonnet-4-6',
     'claude-opus-4-7',
     'claude-opus-4-8',
+    'omniroute/deepseek-v4',
+    'omniroute/deepseek-v4-flash',
+    'omniroute/deepseek-v4-pro',
     'omniroute/deepseek-r1',
     'omniroute/deepseek-v3',
     'omniroute/deepseek-coder',
     'omniroute/deepseek-v2.5',
     'omniroute/gpt-4o',
     'omniroute/gpt-4o-mini',
+    'deepseek-v4',
+    'deepseek-v4-flash',
+    'deepseek-v4-pro',
     'deepseek-chat',
     'deepseek-reasoner',
     'deepseek-coder'
@@ -128,6 +134,11 @@ function groupModelsByProvider(models) {
 
   models.forEach(model => {
     const m = model.toLowerCase();
+
+    if (m.includes('deepseek')) {
+      add('DeepSeek', model);
+    }
+
     if (model.startsWith('auto/')) {
       add('Auto Combos (OmniRoute)', model);
     } else if (model.startsWith('omniroute/')) {
@@ -151,11 +162,9 @@ function groupModelsByProvider(models) {
         } else if (m.startsWith('claude') || m.startsWith('anthropic/') || m.includes('anthropic') || m.includes('opus') || m.includes('sonnet')) {
           add('Google AI (Studio & Subscriptions)', model);
           add('Anthropic', model);
-        } else if (m.startsWith('deepseek') || m.includes('deepseek')) {
-          add('DeepSeek', model);
         } else if (m.startsWith('gpt') || m.startsWith('openai/') || m.startsWith('o1') || m.startsWith('o3')) {
           add('OpenAI', model);
-        } else {
+        } else if (!m.includes('deepseek')) {
           add('Other Direct Providers', model);
         }
       }
