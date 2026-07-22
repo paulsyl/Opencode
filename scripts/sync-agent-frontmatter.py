@@ -107,8 +107,9 @@ def sync():
             continue
 
         agent_name = fm["name"]
-        # Prefer matrix mapping if present
-        agent_model = matrix_mappings.get(agent_name, fm.get("model", "omniroute/auto"))
+        existing_model = opencode_cfg["agent"].get(agent_name, {}).get("model")
+        # Prefer matrix mapping if present, otherwise preserve existing opencode.json model or SKILL.md model
+        agent_model = matrix_mappings.get(agent_name, existing_model or fm.get("model", "omniroute/auto"))
         agent_desc = fm.get("description", "")
         agent_mode = fm.get("mode", "all")
 

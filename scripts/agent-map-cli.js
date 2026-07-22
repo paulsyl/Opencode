@@ -4,12 +4,49 @@ const path = require('path');
 const readline = require('readline');
 const { discoverAgents, fetchModels, groupModelsByProvider } = require('./agent-discovery.js');
 
-const matrixPath = '.agents/agent-models.json';
-let config = { mappings: {}, fallbacks: { default: 'omniroute/gemini-2.0-flash' } };
+const homeDir = process.env.HOME || '';
 
-if (fs.existsSync(matrixPath)) {
-  try { config = JSON.parse(fs.readFileSync(matrixPath, 'utf8')); } catch (e) {}
+function loadConfig() {
+  let mappings = {};
+
+  // 1. Read existing models from ~/.config/opencode/opencode.json
+  const opencodeJsonPath = path.join(homeDir, '.config', 'opencode', 'opencode.json');
+  if (fs.existsSync(opencodeJsonPath)) {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(opencodeJsonPath, 'utf8'));
+      if (cfg.agent) {
+        Object.keys(cfg.agent).forEach(a => {
+          if (cfg.agent[a] && cfg.agent[a].model) {
+            mappings[a] = cfg.agent[a].model;
+          }
+        });
+      }
+    } catch(e) {}
+  }
+
+  // 2. Override with ~/.config/opencode/agent-models.json
+  const globalMatrixPath = path.join(homeDir, '.config', 'opencode', 'agent-models.json');
+  if (fs.existsSync(globalMatrixPath)) {
+    try {
+      const gCfg = JSON.parse(fs.readFileSync(globalMatrixPath, 'utf8'));
+      if (gCfg.mappings) Object.assign(mappings, gCfg.mappings);
+    } catch(e) {}
+  }
+
+  // 3. Override with workspace .agents/agent-models.json
+  const localMatrixPath = '.agents/agent-models.json';
+  if (fs.existsSync(localMatrixPath)) {
+    try {
+      const lCfg = JSON.parse(fs.readFileSync(localMatrixPath, 'utf8'));
+      if (lCfg.mappings) Object.assign(mappings, lCfg.mappings);
+    } catch(e) {}
+  }
+
+  return { mappings, fallbacks: { default: 'omniroute/gemini-2.0-flash' } };
 }
+
+const matrixPath = '.agents/agent-models.json';
+let config = loadConfig();
 
 const agents = discoverAgents();
 
