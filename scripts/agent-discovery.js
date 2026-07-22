@@ -165,41 +165,61 @@ function groupModelsByProvider(models) {
   models.forEach(model => {
     const m = model.toLowerCase();
 
+    // 1. Prefix-based grouping
+    if (model.startsWith('omniroute/')) {
+      add('OmniRoute Gateway', model);
+    }
     if (model.startsWith('antigravity/')) {
       add('Antigravity (OAuth)', model);
-    } else if (model.startsWith('gemini/')) {
+    }
+    if (model.startsWith('gemini/')) {
       add('Google AI Studio (API Key)', model);
-    } else if (model.startsWith('omniroute/')) {
-      add('OmniRoute Gateway', model);
-    } else if (model.startsWith('auto/')) {
+    }
+    if (model.startsWith('auto/')) {
       add('Auto Combos (OmniRoute)', model);
-    } else if (model.startsWith('openrouter/')) {
+    }
+    if (model.startsWith('openrouter/')) {
       add('OpenRouter', model);
-    } else if (model.startsWith('ollama/')) {
+    }
+    if (model.startsWith('ollama/')) {
       add('Ollama / Local', model);
-    } else if (model.startsWith('bedrock/')) {
+    }
+    if (model.startsWith('bedrock/')) {
       add('Amazon Bedrock', model);
-    } else if (model.startsWith('vertex/')) {
+    }
+    if (model.startsWith('vertex/')) {
       add('Google Vertex AI', model);
-    } else if (model.startsWith('tllm/')) {
+    }
+    if (model.startsWith('tllm/')) {
       add('Together AI', model);
-    } else if (model.includes('/')) {
+    }
+
+    // 2. Cross-category provider mapping for Claude, Gemini, DeepSeek, OpenAI
+    if (m.includes('claude') || m.includes('opus') || m.includes('sonnet') || m.includes('haiku')) {
+      add('Google AI (Subscriptions)', model);
+      add('Google AI Studio (API Key)', model);
+      add('Antigravity (OAuth)', model);
+      add('Anthropic (Direct API)', model);
+    }
+
+    if (m.includes('gemini') || m.includes('google')) {
+      add('Google AI Studio (API Key)', model);
+      add('Google AI (Subscriptions)', model);
+      add('Antigravity (OAuth)', model);
+    }
+
+    if (m.includes('deepseek') || m.includes('r1') || m.includes('coder')) {
+      add('DeepSeek (Direct API)', model);
+    }
+
+    if (m.includes('gpt') || m.includes('openai') || m.includes('o1') || m.includes('o3')) {
+      add('OpenAI (Direct API)', model);
+    }
+
+    if (model.includes('/') && !groups['Other Direct Providers']) {
       const prefix = model.split('/')[0];
       const pName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
       add(pName, model);
-    } else {
-      if (m.startsWith('deepseek') || m.includes('deepseek')) {
-        add('DeepSeek (Direct API)', model);
-      } else if (m.startsWith('gemini') || m.startsWith('google') || m.includes('google')) {
-        add('Google AI Studio (API Key)', model);
-      } else if (m.startsWith('claude') || m.startsWith('anthropic') || m.includes('opus') || m.includes('sonnet')) {
-        add('Google AI (Subscriptions)', model);
-        add('Anthropic (Direct API)', model);
-      } else if (m.startsWith('gpt') || m.startsWith('openai') || m.startsWith('o1') || m.startsWith('o3')) {
-        add('OpenAI (Direct API)', model);
-      } else {
-        add('Other Direct Providers', model);
-      }
     }
   });
 
