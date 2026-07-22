@@ -42,6 +42,19 @@ bash "${SCRIPT_DIR}/scripts/configure-agent.sh"
 echo "[+] Step 4/4: Smart Launcher Wrapper Linking..."
 bash "${SCRIPT_DIR}/scripts/link-wrapper.sh"
 
+# Seed agent-models.json if missing
+mkdir -p .agents
+if [ ! -f .agents/agent-models.json ]; then
+  cp "${SCRIPT_DIR}/templates/agent-models.json.template" .agents/agent-models.json
+  echo "[+] Initialized .agents/agent-models.json with default mappings."
+fi
+
+# Validate JSON schema
+node -e "JSON.parse(require('fs').readFileSync('.agents/agent-models.json'))" || {
+  echo "Error: Invalid JSON in .agents/agent-models.json" >&2
+  exit 1
+}
+
 # 3. Interactive API Key Prompt (if TTY)
 FALLBACK_ENV="${HOME}/.config/opencode/env"
 if [ -t 0 ] && [ -f "${FALLBACK_ENV}" ]; then

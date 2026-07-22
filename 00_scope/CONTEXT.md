@@ -20,3 +20,17 @@ Intercepting `opencode update` or running `./setup-opencode-omniroute.sh --updat
 
 **Documentation Standard**:
 Comprehensive documentation including architecture diagram, quickstart guide, configuration reference, and maintenance commands adhering to project documentation standards.
+
+**Core Workflow Agents**:
+Specialized agent personas (e.g. Architect, Executor, Specifier, Review Council) operating within `.agents/` workflows, requiring granular model routing per persona.
+
+**Agent Model Mapping Matrix**:
+Declarative per-project JSON mapping (`.agents/agent-models.json`) connecting individual `core_workflow` agent personas (e.g., `architect`, `executor`, `specifier-grill`) to OmniRoute upstream model aliases.
+
+**Interactive Fail-Fast Rerouting**:
+CLI wrapper mechanism that catches model API failures/503s/rate limits mid-session and presents an interactive terminal menu to pick an alternative fallback model and resume execution.
+
+**Daemon Launch Optimization**:
+Configuring the OmniRoute Node.js daemon service launch (memory limits, network socket keepalive, log verbosity, static compression) for high performance without touching core repository code.
+
+

@@ -33,6 +33,10 @@ echo "[+] Rebuilding native sqlite drivers for Node 24 compatibility..."
 echo "[+] Writing OmniRoute environment configuration..."
 cat << 'EOF' > "${CONFIG_DIR}/.env"
 PORT=20128
+HOST=127.0.0.1
+NODE_OPTIONS="--max-old-space-size=512 --no-warnings"
+LOG_LEVEL=info
+KEEP_ALIVE_TIMEOUT=60000
 EOF
 chmod 600 "${CONFIG_DIR}/.env"
 

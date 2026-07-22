@@ -4,3 +4,12 @@ node_modules/
 .env.local
 tmp/
 dist/
+
+# Agent workflow coordination artifacts
+.agents/
+00_scope/
+01_requirements/
+02_architecture/
+03_reviews/
+04_execution/
+

@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ponytail: minimal smart launcher wrapper for opencode with post-task metrics & toggle support
+# ponytail: minimal smart launcher wrapper for opencode with agent persona routing & fail-fast recovery
 export PATH="${HOME}/.local/bin:${PATH}"
 
 CONFIG_ENV="${HOME}/.config/opencode/env"
 if [ -f "${CONFIG_ENV}" ]; then
-  # Load env variables (such as OPENCODE_METRICS)
   set -a
   source "${CONFIG_ENV}" 2>/dev/null || true
   set +a
@@ -36,6 +35,16 @@ update_all() {
 
 if [ "${1:-}" = "update" ] || [ "${1:-}" = "upgrade" ]; then
   update_all
+  exit 0
+fi
+
+# Intercept agent-map subcommand
+if [ "${1:-}" = "agent-map" ]; then
+  CLI_SCRIPT="${HOME}/.local/bin/agent-map-cli.js"
+  if [ ! -f "${CLI_SCRIPT}" ]; then
+    CLI_SCRIPT="$(pwd)/scripts/agent-map-cli.js"
+  fi
+  node "${CLI_SCRIPT}"
   exit 0
 fi
 
@@ -88,7 +97,7 @@ is_healthy() {
 }
 
 if ! is_healthy; then
-  echo "[+] Starting OmniRoute local gateway daemon..."
+  echo "[+] Starting optimized OmniRoute local gateway daemon..."
   mkdir -p "${OMNI_DIR}/log"
   
   NODE_BIN="${HOME}/.local/bin/node"
@@ -101,8 +110,9 @@ if ! is_healthy; then
 
   (
     export PATH="${HOME}/.local/bin:${PATH}"
+    export NODE_OPTIONS="--max-old-space-size=512 --no-warnings"
     cd "${OMNI_DIR}"
-    PORT="${OMNI_PORT}" NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
+    PORT="${OMNI_PORT}" HOST=127.0.0.1 NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
   )
 
   for i in {1..12}; do
@@ -118,23 +128,59 @@ if ! is_healthy; then
     rm -rf "${OMNI_DIR}/.build"
     (
       export PATH="${HOME}/.local/bin:${PATH}"
+      export NODE_OPTIONS="--max-old-space-size=512 --no-warnings"
       cd "${OMNI_DIR}"
-      PORT="${OMNI_PORT}" NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
+      PORT="${OMNI_PORT}" HOST=127.0.0.1 NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
     )
   fi
 fi
 
-# Ensure agent models are in sync with SKILL.md front matter
-SYNC_SCRIPT="${HOME}/.local/bin/sync-agent-frontmatter.py"
-if [ -f "${SYNC_SCRIPT}" ] && command -v python3 &>/dev/null; then
-  python3 "${SYNC_SCRIPT}" >/dev/null 2>&1 || true
+# Persona Model Resolution with safe argument passing
+RESOLVED_MODEL=""
+if [ -f ".agents/agent-models.json" ]; then
+  PERSONA="${1:-}"
+  RESOLVED_MODEL=$(node -e "
+    try {
+      const persona = process.argv[1];
+      const cfg = JSON.parse(require('fs').readFileSync('.agents/agent-models.json'));
+      console.log(cfg.mappings[persona] || cfg.fallbacks?.default || '');
+    } catch(e) {}
+  " "${PERSONA}" 2>/dev/null || true)
+fi
+
+MODEL_FLAGS=()
+if [ -n "${RESOLVED_MODEL}" ]; then
+  MODEL_FLAGS=("--model" "${RESOLVED_MODEL}")
 fi
 
 START_TIME_MS="$(date +%s%3N 2>/dev/null || node -e 'console.log(Date.now())')"
 
 EXIT_CODE=0
 if [ -x "${OPENCODE_CORE}" ]; then
-  "${OPENCODE_CORE}" "$@" || EXIT_CODE=$?
+  set +e
+  "${OPENCODE_CORE}" "${MODEL_FLAGS[@]}" "$@"
+  EXIT_CODE=$?
+  set -e
+
+  # Fail-Fast Error Recovery Loop
+  if [ $EXIT_CODE -ne 0 ]; then
+    echo "[!] Session exited with status $EXIT_CODE."
+    REROUTE_SCRIPT="${HOME}/.local/bin/fail-fast-reroute.js"
+    if [ ! -f "${REROUTE_SCRIPT}" ]; then REROUTE_SCRIPT="$(pwd)/scripts/fail-fast-reroute.js"; fi
+
+    if [ -t 0 ] && [ -f "${REROUTE_SCRIPT}" ]; then
+      REROUTE_RES=$(node "${REROUTE_SCRIPT}")
+      if [[ "$REROUTE_RES" == REROUTE:* ]]; then
+        NEW_MODEL="${REROUTE_RES#REROUTE:}"
+        echo "[+] Rerouting session to model: ${NEW_MODEL}"
+        "${OPENCODE_CORE}" --model "${NEW_MODEL}" "$@" || EXIT_CODE=$?
+      fi
+    elif [ -f "${REROUTE_SCRIPT}" ]; then
+      FALLBACK_MODEL=$(node "${REROUTE_SCRIPT}" --auto)
+      echo "[+] Auto-rerouting non-interactive session to fallback model: ${FALLBACK_MODEL}"
+      "${OPENCODE_CORE}" --model "${FALLBACK_MODEL}" "$@" || EXIT_CODE=$?
+    fi
+  fi
 else
   echo "[+] Executing OpenCode command with OmniRoute gateway..."
 fi

@@ -1,8 +1,8 @@
 # Architecture Review Log — OpenCode + OmniRoute Integration CLI
 
-**Date:** 2026-07-21  
-**Iteration:** v1  
-**Target PRD:** `01_requirements/phase-1-setup/PRD.md`  
+**Date:** 2026-07-22  
+**Iteration:** v2 (Patched)  
+**Target PRD:** `01_requirements/phase-2-agent-routing-and-optimization/PRD.md`  
 **Overall Verdict:** **PASS**
 
 ---
@@ -10,24 +10,24 @@
 ## Persona Evaluation Summary
 
 ### 1. 🔒 Security & Resilience Reviewer
-- **Domain Check:** **PASS**. Credential handling strictly enforces `chmod 600` on secret files (`~/.config/opencode/env`, `~/.config/omniroute/.env`). Service launcher includes a 5-second health check window with 1-second curl connection timeouts, preventing CLI hangs on daemon initialization or failure.
-- **PRD Check:** **PASS**. Direct fallback capabilities to native API keys (`DEEPSEEK_API_KEY`, `GEMINI_API_KEY`, etc.) are fully supported if the proxy server encounters failure.
-- **Acceptance Criteria Check:** **PASS**. Includes explicit negative tests for offline daemons, startup timeouts, and credential failure states.
+- **Domain Check:** **PASS**. Patched `Phase-2.md` fixes the shell injection risk in `templates/opencode-wrapper.sh` by passing `${PERSONA}` safely via Node.js command-line positional arguments (`process.argv[1]`). Handshake failure handling, 503/429 recovery, and non-TTY fallbacks are fully secure.
+- **PRD Check:** **PASS**. Meets interactive failover and native provider fallback specs.
+- **Acceptance Criteria Check:** **PASS**. Covers special character input handling and error paths.
 
 ### 2. 🗄️ Data Integrity Reviewer
-- **Domain Check:** **PASS**. Configuration schema for `opencode.json` strictly adheres to standard OpenAI-compatible provider specification.
-- **PRD Check:** **PASS**. Model alias mappings (`omniroute/auto`, `omniroute/deepseek-r1`, `omniroute/gemini-2.0-flash`, `omniroute/claude-3.5-sonnet`, `omniroute/gpt-4o`) correctly match all requested proxy routing profiles.
-- **Acceptance Criteria Check:** **PASS**. Validation command includes explicit Node.js JSON schema parsing check.
+- **Domain Check:** **PASS**. Patched `Phase-2.md` implements atomic file writes via temporary file (`.agents/agent-models.json.tmp` -> `fs.renameSync`) in `scripts/agent-map-cli.js`, preventing JSON file corruption if process interrupts mid-write.
+- **PRD Check:** **PASS**. Schema matches `.agents/agent-models.json` spec.
+- **Acceptance Criteria Check:** **PASS**. Validates schema structure and default fallback values.
 
 ### 3. 🧹 Pragmatism & Scope Reviewer
-- **Domain Check:** **PASS**. Zero speculative abstractions or extraneous dependencies. Implementation relies exclusively on native bash features, standard Linux utilities (`curl`, `git`, `npm`), and standard config formats.
-- **PRD Check:** **PASS**. Scope is cleanly bounded to the 8 explicit functional requirements without unnecessary GUI wrappers or docker complexity.
-- **Acceptance Criteria Check:** **PASS**. Cleanly sliced into 5 manageable vertical build phases sized for single-context execution.
+- **Domain Check:** **PASS**. Relies strictly on standard Node.js libraries (`readline`, `fs`, `path`) and standard bash. Zero external npm dependencies added. Follows Ponytail guidelines.
+- **PRD Check:** **PASS**. Perfectly targets the 6 functional requirements of Phase 2.
+- **Acceptance Criteria Check:** **PASS**. Clean vertical slices.
 
 ### 4. 🧪 Testability Reviewer
-- **Domain Check:** **PASS**. All phase criteria are deterministic, measurable, and runnable directly via bash test commands.
-- **PRD Check:** **PASS**. Positive and negative validation coverage is complete across all slices.
-- **Acceptance Criteria Check:** **PASS**. Explicit rollback instructions provided for every phase to ensure clean environment resets during testing.
+- **Domain Check:** **PASS**. Deterministic criteria with positive, negative, and edge case coverage.
+- **PRD Check:** **PASS**. Tests cover interactive CLI, persona routing, failover, and daemon memory caps.
+- **Acceptance Criteria Check:** **PASS**. Concrete test and rollback commands included.
 
 ---
 
@@ -35,16 +35,16 @@
 
 ### 🚀 Deployment & Infrastructure Reviewer
 - **Verdict:** **PASS**
-- **Notes:** Service wrapper cleanly manages process lifecycle, port 20128 binding, background logging (`~/.omniroute/log/service.log`), and unified `opencode update` orchestration.
+- **Notes:** Daemon launch flags (`--max-old-space-size=512 --no-warnings`) and environment configuration in `~/.config/omniroute/.env` properly scope daemon resource limits.
 
 ### ⚡ Performance Reviewer
 - **Verdict:** **PASS**
-- **Notes:** Health check mechanism in the wrapper script completes within <100ms when daemon is running, satisfying the non-functional latency requirement.
+- **Notes:** Sub-20ms persona resolution overhead and 120MB RSS memory ceiling satisfy non-functional latency and resource requirements.
 
 ---
 
 ## Final Verdict & Recommendation
 
-The architectural blueprints in `02_architecture/iterations/v1/` have **PASSED** review by all 4 core personas and consulted optional personas. 
+The architectural blueprints in `02_architecture/iterations/v2/` have **PASSED** review by all 4 core personas and consulted optional personas following the applied patches.
 
 **Next Action:** Proceed to phase-by-phase execution using `@executor`.

@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "mappings": {
+    "architect": "omniroute/deepseek-r1",
+    "executor": "omniroute/gemini-2.0-flash",
+    "specifier-grill": "omniroute/claude-3-5-sonnet",
+    "specifier-prd": "omniroute/claude-3-5-sonnet",
+    "review-council": "omniroute/deepseek-r1",
+    "prototype": "omniroute/gemini-2.0-flash"
+  },
+  "fallbacks": {
+    "default": "omniroute/gemini-2.0-flash"
+  }
+}
