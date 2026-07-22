@@ -68,6 +68,13 @@ function discoverAgents(workspaceRoot = process.cwd()) {
 
 function fetchModels(callback) {
   const staticFallback = [
+    'antigravity/gemini-2.0-flash',
+    'antigravity/gemini-1.5-pro',
+    'antigravity/claude-3-5-sonnet',
+    'antigravity/claude-3-opus',
+    'gemini/gemini-2.0-flash',
+    'gemini/gemini-1.5-pro',
+    'gemini/gemini-1.5-flash',
     'omniroute/gemini-3.6-pro',
     'omniroute/gemini-3.6-flash',
     'omniroute/gemini-3.5-pro',
@@ -119,20 +126,22 @@ function fetchModels(callback) {
     'deepseek-v4',
     'deepseek-v4-flash',
     'deepseek-v4-pro',
-    'deepseek-chat',
-    'deepseek-reasoner',
-    'deepseek-coder'
+    'deepseek-r1',
+    'deepseek-v3',
+    'deepseek-coder',
+    'gpt-4o',
+    'gpt-4o-mini'
   ];
 
-  const req = http.get('http://localhost:20128/v1/models', { timeout: 1500 }, (res) => {
+  const req = http.get('http://localhost:20128/v1/models', { timeout: 2000 }, (res) => {
     let body = '';
     res.on('data', chunk => body += chunk);
     res.on('end', () => {
       try {
         const json = JSON.parse(body);
-        const liveModels = (json.data || []).map(m => m.id || m.name).filter(Boolean);
-        const merged = Array.from(new Set([...liveModels, ...staticFallback]));
-        callback(merged);
+        const fetched = (json.data || []).map(m => m.id);
+        const combined = Array.from(new Set([...fetched, ...staticFallback]));
+        callback(combined);
       } catch(e) {
         callback(staticFallback);
       }
@@ -156,7 +165,11 @@ function groupModelsByProvider(models) {
   models.forEach(model => {
     const m = model.toLowerCase();
 
-    if (model.startsWith('omniroute/')) {
+    if (model.startsWith('antigravity/')) {
+      add('Antigravity (OAuth)', model);
+    } else if (model.startsWith('gemini/')) {
+      add('Google AI Studio (API Key)', model);
+    } else if (model.startsWith('omniroute/')) {
       add('OmniRoute Gateway', model);
     } else if (model.startsWith('auto/')) {
       add('Auto Combos (OmniRoute)', model);
@@ -178,7 +191,7 @@ function groupModelsByProvider(models) {
       if (m.startsWith('deepseek') || m.includes('deepseek')) {
         add('DeepSeek (Direct API)', model);
       } else if (m.startsWith('gemini') || m.startsWith('google') || m.includes('google')) {
-        add('Google AI Studio', model);
+        add('Google AI Studio (API Key)', model);
       } else if (m.startsWith('claude') || m.startsWith('anthropic') || m.includes('opus') || m.includes('sonnet')) {
         add('Google AI (Subscriptions)', model);
         add('Anthropic (Direct API)', model);
