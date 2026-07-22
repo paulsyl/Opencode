@@ -47,13 +47,47 @@ function discoverAgents(workspaceRoot = process.cwd()) {
 
 function fetchModels(callback) {
   const staticFallback = [
+    'omniroute/gemini-3.6-pro',
+    'omniroute/gemini-3.6-flash',
+    'omniroute/gemini-3.5-pro',
+    'omniroute/gemini-3.5-flash',
+    'omniroute/gemini-3.1-pro-high',
+    'omniroute/gemini-3.1-pro-low',
+    'omniroute/gemini-2.5-pro',
+    'omniroute/gemini-2.5-flash',
+    'omniroute/gemini-2.0-flash',
+    'omniroute/gemini-2.0-flash-lite',
+    'omniroute/gemini-2.0-pro-exp-02-05',
+    'omniroute/gemini-2.0-flash-thinking-exp',
+    'omniroute/gemini-1.5-pro',
+    'omniroute/gemini-1.5-flash',
+    'gemini-3.6-pro',
+    'gemini-3.6-flash',
+    'gemini-3.5-pro',
+    'gemini-3.5-flash',
+    'gemini-3.1-pro-high',
+    'gemini-3.1-pro-low',
+    'gemini-2.5-pro',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash',
+    'gemini-pro-agent',
+    'gemini-3-flash-agent',
+    'gemini-3.5-flash-low',
+    'omniroute/claude-3.7-sonnet',
+    'omniroute/claude-3.5-sonnet',
+    'omniroute/claude-3.5-haiku',
+    'omniroute/claude-3-opus',
+    'claude-3-5-sonnet',
+    'claude-3-7-sonnet',
     'omniroute/deepseek-r1',
     'omniroute/deepseek-v3',
-    'omniroute/gemini-2.0-flash',
-    'omniroute/claude-3.5-sonnet',
     'omniroute/gpt-4o',
-    'gemini-2.0-flash',
-    'deepseek-chat'
+    'omniroute/gpt-4o-mini',
+    'deepseek-chat',
+    'deepseek-reasoner'
   ];
 
   const req = http.get('http://localhost:20128/v1/models', { timeout: 1500 }, (res) => {
@@ -62,8 +96,9 @@ function fetchModels(callback) {
     res.on('end', () => {
       try {
         const json = JSON.parse(body);
-        const models = (json.data || []).map(m => m.id || m.name).filter(Boolean);
-        callback(models.length > 0 ? models : staticFallback);
+        const liveModels = (json.data || []).map(m => m.id || m.name).filter(Boolean);
+        const merged = Array.from(new Set([...liveModels, ...staticFallback]));
+        callback(merged);
       } catch(e) {
         callback(staticFallback);
       }
