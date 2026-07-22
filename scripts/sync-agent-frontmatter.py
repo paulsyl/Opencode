@@ -120,19 +120,53 @@ def sync():
 
     def ensure_model_registered(full_model):
         if not full_model:
-            return "omniroute/auto"
-        # If unprefixed, default to omniroute/
-        if "/" not in full_model:
-            full_model = f"omniroute/{full_model}"
+            return "gemini/gemini-2.0-flash"
 
-        provider_part, model_part = full_model.split("/", 1)
-        if provider_part == "omniroute":
-            if model_part not in omni_models:
-                omni_models[model_part] = {
-                    "name": model_part,
-                    "limit": {"context": 200000, "output": 8192}
-                }
-        return full_model
+        raw_str = full_model.strip()
+        if "/" in raw_str:
+            provider_part, model_part = raw_str.split("/", 1)
+        else:
+            m_lower = raw_str.lower()
+            if "gemini" in m_lower or "google" in m_lower:
+                provider_part = "gemini"
+            elif "deepseek" in m_lower or "r1" in m_lower:
+                provider_part = "deepseek"
+            elif "claude" in m_lower or "opus" in m_lower or "sonnet" in m_lower:
+                provider_part = "anthropic"
+            elif "gpt" in m_lower or "openai" in m_lower:
+                provider_part = "openai"
+            else:
+                provider_part = "omniroute"
+            model_part = raw_str
+            raw_str = f"{provider_part}/{model_part}"
+
+        # Register model in provider definition if missing
+        if "provider" not in opencode_cfg:
+            opencode_cfg["provider"] = {}
+
+        if provider_part not in opencode_cfg["provider"]:
+            display_name = provider_part.capitalize()
+            opencode_cfg["provider"][provider_part] = {
+                "name": f"{display_name} (via OmniRoute)",
+                "npm": "@ai-sdk/openai",
+                "options": {
+                    "baseURL": "http://localhost:20128/v1",
+                    "apiKey": "omniroute-local"
+                },
+                "models": {}
+            }
+
+        p_entry = opencode_cfg["provider"][provider_part]
+        if "models" not in p_entry:
+            p_entry["models"] = {}
+
+        if model_part not in p_entry["models"]:
+            p_entry["models"][model_part] = {
+                "name": model_part,
+                "limit": {"context": 200000, "output": 8192}
+            }
+
+        return raw_str
 
     updated_count = 0
     for smd in set(skill_md_files):

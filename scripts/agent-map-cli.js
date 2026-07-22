@@ -145,30 +145,46 @@ fetchModels((rawModels) => {
         if (!opencodeCfg.agent[agent]) opencodeCfg.agent[agent] = {};
         
         let fullModel = model;
-        if (!fullModel.includes('/')) fullModel = `omniroute/${fullModel}`;
+        if (!fullModel.includes('/')) {
+          const mLower = model.toLowerCase();
+          if (mLower.includes('gemini') || mLower.includes('google')) {
+            fullModel = `gemini/${model}`;
+          } else if (mLower.includes('deepseek') || mLower.includes('r1')) {
+            fullModel = `deepseek/${model}`;
+          } else if (mLower.includes('claude') || mLower.includes('opus') || mLower.includes('sonnet')) {
+            fullModel = `anthropic/${model}`;
+          } else if (mLower.includes('gpt') || mLower.includes('openai')) {
+            fullModel = `openai/${model}`;
+          } else {
+            fullModel = `omniroute/${model}`;
+          }
+        }
 
         opencodeCfg.agent[agent].model = fullModel;
 
+        const parts = fullModel.split('/', 2);
+        const providerPart = parts[0];
+        const modelKey = parts[1] || fullModel;
+
         if (!opencodeCfg.provider) opencodeCfg.provider = {};
-        if (!opencodeCfg.provider.omniroute) {
-          opencodeCfg.provider.omniroute = {
-            name: "OmniRoute Gateway",
+        if (!opencodeCfg.provider[providerPart]) {
+          const displayName = providerPart.charAt(0).toUpperCase() + providerPart.slice(1);
+          opencodeCfg.provider[providerPart] = {
+            name: `${displayName} (via OmniRoute)`,
             npm: "@ai-sdk/openai",
             options: { baseURL: "http://localhost:20128/v1", apiKey: "omniroute-local" },
             models: {}
           };
         }
-        if (!opencodeCfg.provider.omniroute.models) opencodeCfg.provider.omniroute.models = {};
+        if (!opencodeCfg.provider[providerPart].models) {
+          opencodeCfg.provider[providerPart].models = {};
+        }
 
-        const parts = fullModel.split('/', 2);
-        if (parts[0] === 'omniroute' && parts[1]) {
-          const modelKey = parts[1];
-          if (!opencodeCfg.provider.omniroute.models[modelKey]) {
-            opencodeCfg.provider.omniroute.models[modelKey] = {
-              name: modelKey,
-              limit: { context: 200000, output: 8192 }
-            };
-          }
+        if (!opencodeCfg.provider[providerPart].models[modelKey]) {
+          opencodeCfg.provider[providerPart].models[modelKey] = {
+            name: modelKey,
+            limit: { context: 200000, output: 8192 }
+          };
         }
 
         fs.writeFileSync(opencodeJsonPath, JSON.stringify(opencodeCfg, null, 2));
