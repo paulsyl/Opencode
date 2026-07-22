@@ -1,4 +1,4 @@
-# Quickstart Guide: OpenCode + OmniRoute Integration
+# Quickstart Guide: OpenCode + Direct Provider Routing
 
 ## Onboarding Instructions
 
@@ -10,82 +10,58 @@ Inside your WSL Ubuntu terminal, run:
 ./setup-opencode-omniroute.sh
 ```
 
-The installer automatically installs Node 24, clones OmniRoute to `~/.omniroute`, downloads OpenCode CLI binary to `~/.local/bin/opencode-core`, syncs Antigravity skills to `~/.config/opencode/skills`, configures `~/.config/opencode/opencode.json` with cognitive thinking indicators (`"reasoning": true`), and links the `opencode` launcher wrapper.
+The installer automatically provisions Node 24, downloads OpenCode CLI binary to `~/.local/bin/opencode-core`, syncs Antigravity skills to `~/.config/opencode/skills`, and configures direct provider blocks in `~/.config/opencode/opencode.json`.
 
 ---
 
-### 2. Visual Cognitive Thinking Indicator
+### 2. Configure API Keys
 
-When executing reasoning models (e.g., **DeepSeek R1**) or auto-routing (`omniroute/auto`), OpenCode CLI displays a visual thinking completion indicator:
-
-- **Thinking In Progress**:
-  ```text
-  🧠 Thinking (12.4s, 3,420 reasoning tokens)...
-  ```
-- **Thinking Completed**:
-  ```text
-  🧠 Thinking (12.4s, 3,420 tokens) ✓
-  ```
-
----
-
-### 3. Launch OpenCode & Subagent Workflows
-
-Run `opencode` with any model profile:
+Use the built-in key manager to set your provider API keys:
 
 ```bash
-# Intelligent auto-routing (default)
-opencode -m omniroute/auto
+# Set DeepSeek API Key
+opencode keys set deepseek sk-xxxx
 
-# Explicit model selection
-opencode -m omniroute/deepseek-r1
-opencode -m omniroute/gemini-2.0-flash
+# Set Google AI Studio API Key (includes Gemini and Claude models)
+opencode keys set gemini AQ.xxxx
+
+# Verify configured keys and cached models
+opencode keys list
 ```
 
 ---
 
-### 4. Assigning Models to Agents
+### 3. Map Models to Agents (`opencode agent-map`)
 
-#### List Available Models
+Run interactive TTY menu to map models to agent personas:
+
 ```bash
-opencode models
+opencode agent-map
 ```
 
-#### Override Subagent Model via CLI
-```bash
-opencode --agent architect --model omniroute/deepseek-r1
-opencode --agent executor --model omniroute/gemini-2.0-flash
-opencode --agent review-council --model omniroute/claude-3.5-sonnet
-```
+Use arrow keys (`↑`/`↓`) to navigate agents, press `Enter` to open the model picker, and select a model from your active provider subscriptions.
 
-#### Pin Subagent Models in Config (`~/.config/opencode/opencode.json`)
-```json
-{
-  "agent": {
-    "architect": {
-      "model": "omniroute/deepseek-r1",
-      "description": "Translate PRD requirements into vertical-sliced technical blueprints"
-    },
-    "executor": {
-      "model": "omniroute/gemini-2.0-flash",
-      "description": "Build and implement code phase-by-phase"
-    },
-    "review-council": {
-      "model": "omniroute/claude-3.5-sonnet",
-      "description": "Multi-persona code review council"
-    }
-  }
-}
+---
+
+### 4. Launch OpenCode
+
+Launch OpenCode from any directory:
+
+```bash
+# Launch default session
+opencode
+
+# Launch with explicit model target
+opencode -m gemini/gemini-2.5-pro
+opencode -m deepseek/deepseek-reasoner
 ```
 
 ---
 
-### 5. Updating
+### 5. Maintenance & Updates
 
-Update both OpenCode and OmniRoute with a single command:
+Update OpenCode CLI:
 
 ```bash
 opencode update
-# OR
-./setup-opencode-omniroute.sh --update
 ```

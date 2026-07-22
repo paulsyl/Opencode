@@ -2,40 +2,43 @@
 
 ## Common Issues & Solutions
 
-### 1. OmniRoute Service Logs
+### 1. "No provider API keys found" Error
 
-Logs for the OmniRoute gateway process are stored at:
-```bash
-cat ~/.omniroute/log/service.log
-```
-
----
-
-### 2. Port 20128 Port Conflict
-
-If port `20128` is occupied by another process:
+If invoking `opencode` outputs `[!] No provider API keys found.`:
 
 ```bash
-# Identify process using port 20128
-lsof -i :20128
+# Add your DeepSeek or Google AI Studio API key:
+opencode keys set deepseek <your-key>
 # OR
-ss -tlpn | grep 20128
-
-# Terminate orphaned OmniRoute processes
-pkill -f "run-next.mjs"
+opencode keys set gemini <your-key>
 ```
 
 ---
 
-### 3. Verify Health Check
+### 2. Provider Not Configured Error
 
-Manually verify gateway health status:
+If OpenCode fails to execute against a selected model:
+
+1. Verify key status:
+   ```bash
+   opencode keys list
+   ```
+2. Re-run model mapping to bind the persona to an active model:
+   ```bash
+   opencode agent-map
+   ```
+
+---
+
+### 3. Clear Model Cache
+
+If newly released provider models are not appearing in the catalog:
 
 ```bash
-curl -s http://localhost:20128/health
+# Force fresh query on next command by resetting cache
+rm -f ~/.config/opencode/model-cache.json
+opencode keys list
 ```
-
-Expected output: `{"status":"ok"}` or HTTP 200 response.
 
 ---
 
@@ -46,5 +49,4 @@ Ensure API credentials and configurations use secure file permissions (`600`):
 ```bash
 chmod 600 ~/.config/opencode/env
 chmod 600 ~/.config/opencode/opencode.json
-chmod 600 ~/.config/omniroute/.env
 ```

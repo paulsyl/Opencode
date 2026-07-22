@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ponytail: minimal smart launcher wrapper for opencode with agent persona routing & fail-fast recovery
+# ponytail: minimal launcher wrapper for opencode with direct provider routing & fail-fast recovery
 export PATH="${HOME}/.local/bin:${PATH}"
 
 CONFIG_ENV="${HOME}/.config/opencode/env"
@@ -11,11 +11,6 @@ if [ -f "${CONFIG_ENV}" ]; then
   set +a
 fi
 
-OMNI_DIR="${HOME}/.omniroute"
-OMNI_PORT="${PORT:-20128}"
-HEALTH_URL="http://localhost:${OMNI_PORT}/health"
-ALT_HEALTH_URL="http://localhost:${OMNI_PORT}/api/monitoring/health"
-
 OPENCODE_CORE="${HOME}/.local/bin/opencode-core"
 if [ ! -f "${OPENCODE_CORE}" ]; then
   OPENCODE_CORE="$(which opencode-core 2>/dev/null || which opencode-bin 2>/dev/null || echo '')"
@@ -24,17 +19,20 @@ fi
 update_all() {
   echo "[+] Updating OpenCode CLI binary..."
   curl -fsSL https://opencode.ai/install | bash || true
-
-  echo "[+] Updating OmniRoute Gateway codebase..."
-  if [ -d "${OMNI_DIR}" ]; then
-    (cd "${OMNI_DIR}" && git pull && npm install --legacy-peer-deps)
-    pkill -f "run-next.mjs" 2>/dev/null || true
-    echo "[+] OmniRoute updated successfully."
-  fi
 }
 
 if [ "${1:-}" = "update" ] || [ "${1:-}" = "upgrade" ]; then
   update_all
+  exit 0
+fi
+
+# Intercept keys subcommand
+if [ "${1:-}" = "keys" ] || [ "${1:-}" = "key" ]; then
+  KEYS_SCRIPT="${HOME}/.local/bin/opencode-keys.js"
+  if [ ! -f "${KEYS_SCRIPT}" ]; then
+    KEYS_SCRIPT="$(pwd)/scripts/opencode-keys.js"
+  fi
+  node "${KEYS_SCRIPT}" "${@:2}"
   exit 0
 fi
 
@@ -90,54 +88,25 @@ if [ "${1:-}" = "metrics" ] || [ "${1:-}" = "stats" ] || [ "${1:-}" = "usage" ];
   exit 0
 fi
 
-is_healthy() {
-  curl -s --connect-timeout 1 "${HEALTH_URL}" >/dev/null 2>&1 || \
-  curl -s --connect-timeout 1 "${ALT_HEALTH_URL}" >/dev/null 2>&1 || \
-  (cd "${OMNI_DIR}" 2>/dev/null && node scripts/dev/healthcheck.mjs >/dev/null 2>&1)
-}
+# Validate Provider API Keys presence
+HAS_KEYS=$(node -e "
+  try {
+    const { readEnvKeys } = require('${HOME}/.local/bin/provider-catalog.js');
+    const k = readEnvKeys();
+    console.log(k.deepseek || k.gemini ? '1' : '0');
+  } catch(e) {
+    try {
+      const { readEnvKeys } = require('./scripts/provider-catalog.js');
+      const k = readEnvKeys();
+      console.log(k.deepseek || k.gemini ? '1' : '0');
+    } catch(err) { console.log('0'); }
+  }
+" 2>/dev/null || echo "0")
 
-if ! is_healthy; then
-  echo "[+] Starting optimized OmniRoute local gateway daemon..."
-  mkdir -p "${OMNI_DIR}/log"
-  
-  NODE_BIN="${HOME}/.local/bin/node"
-  NODE_VER="$("${NODE_BIN}" -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1 || echo "0")"
-  if [ "${NODE_VER}" -lt 24 ]; then
-    echo "[+] Provisioning Node 24 LTS runtime..."
-    mkdir -p "${HOME}/.local"
-    curl -fsSL https://nodejs.org/dist/v24.0.0/node-v24.0.0-linux-x64.tar.xz | tar -xJ -C "${HOME}/.local" --strip-components=1
-  fi
-
-  (
-    export PATH="${HOME}/.local/bin:${PATH}"
-    if [ -f "${CONFIG_ENV}" ]; then
-      set -a
-      source "${CONFIG_ENV}" 2>/dev/null || true
-      set +a
-    fi
-    export NODE_OPTIONS="--max-old-space-size=512 --no-warnings"
-    cd "${OMNI_DIR}"
-    PORT="${OMNI_PORT}" HOST=127.0.0.1 NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
-  )
-
-  for i in {1..12}; do
-    sleep 0.5
-    if is_healthy; then
-      echo "[+] OmniRoute gateway active on port ${OMNI_PORT}."
-      break
-    fi
-  done
-
-  if ! is_healthy; then
-    echo "[!] Clearing build cache to heal dev compilation..."
-    rm -rf "${OMNI_DIR}/.build"
-    (
-      export PATH="${HOME}/.local/bin:${PATH}"
-      export NODE_OPTIONS="--max-old-space-size=512 --no-warnings"
-      cd "${OMNI_DIR}"
-      PORT="${OMNI_PORT}" HOST=127.0.0.1 NODE_ENV=development nohup "${NODE_BIN}" scripts/dev/run-next.mjs dev > "${OMNI_DIR}/log/service.log" 2>&1 < /dev/null &
-    )
-  fi
+if [ "${HAS_KEYS}" = "0" ]; then
+  echo "[!] No provider API keys found."
+  echo "[!] Configure API keys using 'opencode keys set <provider>' or edit ~/.config/opencode/env."
+  exit 1
 fi
 
 # Persona Model Resolution with First-Run Unmapped Interception
@@ -152,10 +121,10 @@ if [ -n "${PERSONA}" ] && [ -f ".agents/agent-models.json" ]; then
       if (cfg.mappings && cfg.mappings[persona]) {
         console.log('MAPPED:' + cfg.mappings[persona]);
       } else {
-        console.log('UNMAPPED:' + (cfg.fallbacks?.default || 'omniroute/gemini-2.0-flash'));
+        console.log('UNMAPPED:' + (cfg.fallbacks?.default || 'gemini/gemini-2.5-pro'));
       }
     } catch(e) {
-      console.log('UNMAPPED:omniroute/gemini-2.0-flash');
+      console.log('UNMAPPED:gemini/gemini-2.5-pro');
     }
   " "${PERSONA}" 2>/dev/null || true)
 fi
@@ -220,7 +189,7 @@ if [ -x "${OPENCODE_CORE}" ]; then
     fi
   fi
 else
-  echo "[+] Executing OpenCode command with OmniRoute gateway..."
+  echo "[+] Executing OpenCode command..."
 fi
 
 # Post-task execution metrics (if enabled)

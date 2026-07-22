@@ -42,7 +42,7 @@ function loadConfig() {
     } catch(e) {}
   }
 
-  return { mappings, fallbacks: { default: 'omniroute/gemini-2.0-flash' } };
+  return { mappings, fallbacks: { default: 'gemini/gemini-2.5-pro' } };
 }
 
 const matrixPath = '.agents/agent-models.json';
@@ -147,16 +147,10 @@ fetchModels((rawModels) => {
         let fullModel = model;
         if (!fullModel.includes('/')) {
           const mLower = model.toLowerCase();
-          if (mLower.includes('gemini') || mLower.includes('google')) {
-            fullModel = `gemini/${model}`;
-          } else if (mLower.includes('deepseek') || mLower.includes('r1')) {
+          if (mLower.includes('deepseek') || mLower.includes('r1')) {
             fullModel = `deepseek/${model}`;
-          } else if (mLower.includes('claude') || mLower.includes('opus') || mLower.includes('sonnet')) {
-            fullModel = `anthropic/${model}`;
-          } else if (mLower.includes('gpt') || mLower.includes('openai')) {
-            fullModel = `openai/${model}`;
           } else {
-            fullModel = `omniroute/${model}`;
+            fullModel = `gemini/${model}`;
           }
         }
 
@@ -168,13 +162,21 @@ fetchModels((rawModels) => {
 
         if (!opencodeCfg.provider) opencodeCfg.provider = {};
         if (!opencodeCfg.provider[providerPart]) {
-          const displayName = providerPart.charAt(0).toUpperCase() + providerPart.slice(1);
-          opencodeCfg.provider[providerPart] = {
-            name: `${displayName} (via OmniRoute)`,
-            npm: "@ai-sdk/openai",
-            options: { baseURL: "http://localhost:20128/v1", apiKey: "omniroute-local" },
-            models: {}
-          };
+          if (providerPart === 'deepseek') {
+            opencodeCfg.provider.deepseek = {
+              name: "DeepSeek Direct API",
+              npm: "@ai-sdk/openai",
+              options: { baseURL: "https://api.deepseek.com/v1", apiKey: "${DEEPSEEK_API_KEY}" },
+              models: {}
+            };
+          } else {
+            opencodeCfg.provider[providerPart] = {
+              name: `${providerPart.charAt(0).toUpperCase() + providerPart.slice(1)} Direct API`,
+              npm: "@ai-sdk/google",
+              options: { apiKey: "${GEMINI_API_KEY}" },
+              models: {}
+            };
+          }
         }
         if (!opencodeCfg.provider[providerPart].models) {
           opencodeCfg.provider[providerPart].models = {};

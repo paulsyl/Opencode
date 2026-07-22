@@ -1,8 +1,8 @@
-# Architecture Reference: OpenCode + OmniRoute Integration
+# Architecture Reference: Direct Provider Routing & Key Gating
 
 ## Overview
 
-The **OpenCode + OmniRoute Integration CLI** establishes a unified local AI gateway proxy inside Windows Subsystem for Linux (WSL Ubuntu). It routes AI coding queries from **OpenCode** (a terminal AI coding agent) across multiple frontier model APIs via **OmniRoute** (local proxy gateway running on port `20128`).
+The **OpenCode Integration** routes AI coding queries directly to upstream provider APIs (DeepSeek and Google AI Studio) using native API keys stored in `~/.config/opencode/env`. The local proxy is removed from the critical path. All model selections are gated by key presence and populated dynamically via live catalog queries.
 
 ---
 
@@ -12,41 +12,33 @@ The **OpenCode + OmniRoute Integration CLI** establishes a unified local AI gate
 flowchart TD
     subgraph WSL_Environment["WSL Ubuntu Environment"]
         User_CLI["User CLI / Terminal"] --> Launcher["Launcher Wrapper (~/.local/bin/opencode)"]
-        Launcher -->|Health Probe / Auto-Start| Omni_Proxy["OmniRoute Local Server (Port 20128)"]
+        Launcher -->|opencode keys| Key_Manager["Key Manager (opencode-keys.js)"]
+        Launcher -->|opencode agent-map| Agent_Map["Agent Mapping TTY UI (agent-map-cli.js)"]
         Launcher -->|Exec| OpenCode_Core["OpenCode Agent (~/.local/bin/opencode-core)"]
-        OpenCode_Core --> Config["~/.config/opencode/opencode.json"]
-        Config -->|Primary OpenAI Route| Omni_Proxy
-        Config -->|Direct Fallback Route| Fallback_Env["~/.config/opencode/env"]
+        
+        Key_Manager --> ENV["~/.config/opencode/env"]
+        Key_Manager --> Catalog["Catalog Engine (provider-catalog.js)"]
+        Agent_Map --> Catalog
+        
+        Catalog --> Cache["~/.config/opencode/model-cache.json (1h TTL)"]
     end
 
-    subgraph LLM_Providers["LLM Providers"]
-        Omni_Proxy --> DeepSeek["DeepSeek (V3 / R1)"]
-        Omni_Proxy --> Gemini["Google Gemini (2.0 Flash / 1.5 Pro)"]
-        Omni_Proxy --> Claude["Anthropic Claude (3.5 Sonnet)"]
-        Omni_Proxy --> OpenAI["OpenAI (GPT-4o)"]
-
-        Fallback_Env .-> DeepSeek
-        Fallback_Env .-> Gemini
+    subgraph LLM_Providers["LLM Providers (HTTPS Direct)"]
+        Catalog -->|GET /v1/models| DeepSeek["DeepSeek API (api.deepseek.com)"]
+        Catalog -->|GET /v1beta/models| Gemini["Google AI Studio API (generativelanguage.googleapis.com)"]
+        
+        OpenCode_Core -->|Bearer Auth| DeepSeek
+        OpenCode_Core -->|API Key Param| Gemini
     end
 ```
 
 ---
 
-## Port Mappings & Services
+## Configuration Files & Locations
 
-| Service / Component | Port / Location | Description |
+| Component | Path / Location | Description |
 | :--- | :--- | :--- |
-| **OmniRoute Proxy** | `http://localhost:20128/v1` | Primary OpenAI-compatible API endpoint |
-| **OmniRoute Health Check**| `http://localhost:20128/health` | Health monitoring endpoint |
-| **OmniRoute Dashboard** | `http://localhost:20128/dashboard` | Web dashboard for local API key management |
-| **OpenCode Config** | `~/.config/opencode/opencode.json` | Agent provider & model alias definitions |
-| **Fallback Env** | `~/.config/opencode/env` | Restricted (`chmod 600`) direct provider credentials |
-
----
-
-## Failover Strategy
-
-If OmniRoute is offline or fails to start within 5 seconds:
-1. The launcher wrapper logs a diagnostic warning to stderr.
-2. OpenCode falls back to direct API keys stored in `~/.config/opencode/env`.
-3. Terminal coding sessions remain completely uninterrupted.
+| **Provider API Keys** | `~/.config/opencode/env` | Restricted (`chmod 600`) env file storing `DEEPSEEK_API_KEY` and `GEMINI_API_KEY` |
+| **OpenCode Config** | `~/.config/opencode/opencode.json` | Auto-generated provider definitions (`deepseek`, `gemini`) and agent mappings |
+| **Model Cache** | `~/.config/opencode/model-cache.json` | 1-hour TTL JSON cache with SHA-256 `keyHash` validation |
+| **Agent Matrix** | `.agents/agent-models.json` | Workspace persona-to-model mapping matrix |

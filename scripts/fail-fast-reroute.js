@@ -1,44 +1,42 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const readline = require('readline');
+const { getGatedModels } = require('./provider-catalog.js');
 
+// ponytail: fail-fast reroute using live key-gated model catalog
 const autoMode = process.argv.includes('--auto');
-const matrixPath = '.agents/agent-models.json';
 
-const fallbackOptions = [
-  { name: 'OmniRoute Gemini 2.0 Flash', model: 'omniroute/gemini-2.0-flash' },
-  { name: 'OmniRoute DeepSeek V3', model: 'omniroute/deepseek-v3' },
-  { name: 'Direct Native Gemini Flash (Fallback)', model: 'gemini-2.0-flash' },
-  { name: 'Direct Native DeepSeek (Fallback)', model: 'deepseek-chat' }
-];
-
-if (autoMode) {
-  let fallback = 'omniroute/gemini-2.0-flash';
-  try {
-    if (fs.existsSync(matrixPath)) {
-      const cfg = JSON.parse(fs.readFileSync(matrixPath, 'utf8'));
-      fallback = cfg.fallbacks?.default || fallback;
+getGatedModels((err, models) => {
+  if (err || !models || models.length === 0) {
+    if (autoMode) {
+      console.log('gemini/gemini-2.5-pro');
+    } else {
+      console.log('CANCEL');
     }
-  } catch(e) {}
-  console.log(fallback);
-  process.exit(0);
-}
-
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-console.log('\n=====================================================');
-console.log('  [!] Upstream API Failure / Rate Limit Detected');
-console.log('=====================================================');
-fallbackOptions.forEach((opt, i) => {
-  console.log(`  [${i + 1}] ${opt.name} (${opt.model})`);
-});
-console.log('  [Q] Cancel session\n');
-
-rl.question('Select fallback model to resume: ', (ans) => {
-  const idx = parseInt(ans.trim(), 10) - 1;
-  if (idx >= 0 && idx < fallbackOptions.length) {
-    console.log(`REROUTE:${fallbackOptions[idx].model}`);
-  } else {
-    console.log('CANCEL');
+    process.exit(0);
   }
-  rl.close();
+
+  if (autoMode) {
+    console.log(models[0].id);
+    process.exit(0);
+  }
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  console.log('\n=====================================================');
+  console.log('  [!] Upstream API Failure / Rate Limit Detected');
+  console.log('=====================================================');
+  models.forEach((opt, i) => {
+    console.log(`  [${i + 1}] ${opt.provider} - ${opt.name} (${opt.id})`);
+  });
+  console.log('  [Q] Cancel session\n');
+
+  rl.question('Select fallback model to resume: ', (ans) => {
+    const idx = parseInt(ans.trim(), 10) - 1;
+    if (idx >= 0 && idx < models.length) {
+      console.log(`REROUTE:${models[idx].id}`);
+    } else {
+      console.log('CANCEL');
+    }
+    rl.close();
+  });
 });
