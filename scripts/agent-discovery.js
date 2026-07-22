@@ -135,14 +135,10 @@ function groupModelsByProvider(models) {
   models.forEach(model => {
     const m = model.toLowerCase();
 
-    if (m.includes('deepseek')) {
-      add('DeepSeek', model);
-    }
-
-    if (model.startsWith('auto/')) {
-      add('Auto Combos (OmniRoute)', model);
-    } else if (model.startsWith('omniroute/')) {
+    if (model.startsWith('omniroute/')) {
       add('OmniRoute Gateway', model);
+    } else if (model.startsWith('auto/')) {
+      add('Auto Combos (OmniRoute)', model);
     } else if (model.startsWith('openrouter/')) {
       add('OpenRouter', model);
     } else if (model.startsWith('ollama/')) {
@@ -151,22 +147,24 @@ function groupModelsByProvider(models) {
       add('Amazon Bedrock', model);
     } else if (model.startsWith('vertex/')) {
       add('Google Vertex AI', model);
+    } else if (model.startsWith('tllm/')) {
+      add('Together AI', model);
+    } else if (model.includes('/')) {
+      const prefix = model.split('/')[0];
+      const pName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+      add(pName, model);
     } else {
-      const parts = model.split('/');
-      if (parts.length > 1) {
-        const pName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-        add(pName, model);
+      if (m.startsWith('deepseek') || m.includes('deepseek')) {
+        add('DeepSeek (Direct API)', model);
+      } else if (m.startsWith('gemini') || m.startsWith('google') || m.includes('google')) {
+        add('Google AI Studio', model);
+      } else if (m.startsWith('claude') || m.startsWith('anthropic') || m.includes('opus') || m.includes('sonnet')) {
+        add('Google AI (Subscriptions)', model);
+        add('Anthropic (Direct API)', model);
+      } else if (m.startsWith('gpt') || m.startsWith('openai') || m.startsWith('o1') || m.startsWith('o3')) {
+        add('OpenAI (Direct API)', model);
       } else {
-        if (m.startsWith('gemini') || m.startsWith('google/') || m.includes('google')) {
-          add('Google AI (Studio & Subscriptions)', model);
-        } else if (m.startsWith('claude') || m.startsWith('anthropic/') || m.includes('anthropic') || m.includes('opus') || m.includes('sonnet')) {
-          add('Google AI (Studio & Subscriptions)', model);
-          add('Anthropic', model);
-        } else if (m.startsWith('gpt') || m.startsWith('openai/') || m.startsWith('o1') || m.startsWith('o3')) {
-          add('OpenAI', model);
-        } else if (!m.includes('deepseek')) {
-          add('Other Direct Providers', model);
-        }
+        add('Other Direct Providers', model);
       }
     }
   });
