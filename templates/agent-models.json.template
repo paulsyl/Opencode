@@ -3,10 +3,22 @@
   "mappings": {
     "architect": "gemini/claude-3-opus",
     "executor": "gemini/gemini-2.5-pro",
-    "specifier-grill": "gemini/claude-3-opus",
-    "specifier-prd": "gemini/gemini-2.5-pro",
+    "orchestrator": "gemini/gemini-3.6-flash",
+    "ponytail": "gemini/gemini-3.6-flash",
+    "ponytail-audit": "gemini/gemini-3.6-flash",
+    "ponytail-debt": "gemini/gemini-3.6-flash",
+    "ponytail-gain": "gemini/gemini-3.6-flash",
+    "ponytail-help": "gemini/gemini-3.6-flash",
+    "ponytail-review": "gemini/gemini-3.6-flash",
+    "prototype": "deepseek/deepseek-chat",
+    "qa-analyzer": "deepseek/deepseek-v4-flash",
+    "qa-architect": "deepseek/deepseek-v4-flash",
+    "qa-execution": "gemini/gemini-3.5-flash",
+    "qa-orchestrator": "gemini/gemini-3.6-flash",
     "review-council": "deepseek/deepseek-reasoner",
-    "prototype": "deepseek/deepseek-chat"
+    "setup-core-workflow": "gemini/gemini-2.5-flash",
+    "specifier-grill": "gemini/claude-3-opus",
+    "specifier-prd": "gemini/gemini-2.5-pro"
   },
   "fallbacks": {
     "default": "gemini/gemini-2.5-pro"

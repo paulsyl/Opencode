@@ -83,15 +83,24 @@ Mappings are persisted atomically to `.agents/agent-models.json` and synced to `
 
 | Agent / Skill | Trigger / Command | Default / Preferred Model | Purpose |
 | :--- | :--- | :--- | :--- |
+| **Architect** | `@architect` | `gemini/claude-3-opus` | Translates PRDs into vertical-sliced technical blueprints |
+| **Executor** | `@executor` | `gemini/gemini-2.5-pro` | Phase-by-phase implementation builder with escape hatch handling |
+| **Orchestrator** | `@orchestrator` | `gemini/gemini-3.6-flash` | Chains full SDLC pipeline automatically |
+| **Ponytail** | `@ponytail` | `gemini/gemini-3.6-flash` | Enforces minimal, lazy, zero-boilerplate code standards (YAGNI) |
+| **Ponytail Audit** | `@ponytail-audit` | `gemini/gemini-3.6-flash` | Whole-repo audit for over-engineering and bloat |
+| **Ponytail Debt** | `@ponytail-debt` | `gemini/gemini-3.6-flash` | Harvests deferred ponytail shortcuts into a debt ledger |
+| **Ponytail Gain** | `@ponytail-gain` | `gemini/gemini-3.6-flash` | Shows ponytail impact scoreboard (tokens, cost, speed) |
+| **Ponytail Help** | `@ponytail-help` | `gemini/gemini-3.6-flash` | Quick reference card for all ponytail commands |
+| **Ponytail Review**| `@ponytail-review`| `gemini/gemini-3.6-flash` | Code review focused exclusively on over-engineering |
+| **Prototype** | `@prototype` | `deepseek/deepseek-chat` | Rapid throwaway exploration without ceremony |
+| **QA Analyzer** | `@qa-analyzer` | `deepseek/deepseek-v4-flash` | Audits test execution against PRD test plans |
+| **QA Architect** | `@qa-architect` | `deepseek/deepseek-v4-flash` | Designs comprehensive black-box test plans |
+| **QA Execution** | `@qa-execution` | `gemini/gemini-3.5-flash` | Mechanically executes test steps against target app |
+| **QA Orchestrator**| `@qa-orchestrator` | `gemini/gemini-3.6-flash` | Master QA pipeline orchestrator |
+| **Review Council** | `@review-council` | `deepseek/deepseek-reasoner` | Multi-persona adversarial review council (Security, Data, Scope, Tests) |
+| **Setup Core Workflow**| `@setup-core-workflow`| `gemini/gemini-2.5-flash` | Configures SDLC core-workflow directory structure per repo |
 | **Specifier Grill** | `@specifier-grill` | `gemini/claude-3-opus` | Interactive interview grilling to align requirements |
 | **Specifier PRD** | `@specifier-prd` | `gemini/gemini-2.5-pro` | Generates canonical Product Requirements Document |
-| **Architect** | `@architect` | `gemini/claude-3-opus` | Translates PRDs into vertical-sliced technical blueprints |
-| **Review Council** | `@review-council` | `deepseek/deepseek-reasoner` | Multi-persona adversarial review council (Security, Data, Scope, Tests) |
-| **Executor** | `@executor` | `gemini/gemini-2.5-pro` | Phase-by-phase implementation builder with escape hatch handling |
-| **Orchestrator** | `@orchestrator` | `gemini/gemini-2.5-pro` | Chains full SDLC pipeline automatically |
-| **Prototype** | `@prototype` | `deepseek/deepseek-chat` | Rapid throwaway exploration without ceremony |
-| **Ponytail** | `@ponytail` | `gemini/gemini-2.5-pro` | Enforces minimal, lazy, zero-boilerplate code standards (YAGNI) |
-| **QA Orchestrator**| `@qa-orchestrator` | `gemini/gemini-2.5-pro` | Black-box QA pipeline testing against PRDs |
 
 ---
 
