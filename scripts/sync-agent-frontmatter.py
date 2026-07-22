@@ -73,12 +73,23 @@ def sync():
     if "agent" not in opencode_cfg:
         opencode_cfg["agent"] = {}
 
+    # Load matrix mappings from local or global agent-models.json
+    matrix_mappings = {}
+    for matrix_file in [".agents/agent-models.json", os.path.expanduser("~/.config/opencode/agent-models.json")]:
+        if os.path.exists(matrix_file):
+            try:
+                with open(matrix_file, "r", encoding="utf-8") as mf:
+                    mcfg = json.load(mf)
+                    if "mappings" in mcfg:
+                        matrix_mappings.update(mcfg["mappings"])
+            except Exception:
+                pass
+
     skill_md_files = []
 
     if os.path.exists(skills_dir):
         for entry in os.listdir(skills_dir):
             full_path = os.path.join(skills_dir, entry)
-            # Resolve symlinks or directories
             target_path = os.path.realpath(full_path)
             skill_md = os.path.join(target_path, "SKILL.md")
             if os.path.isfile(skill_md):
@@ -96,7 +107,8 @@ def sync():
             continue
 
         agent_name = fm["name"]
-        agent_model = fm.get("model", "omniroute/auto")
+        # Prefer matrix mapping if present
+        agent_model = matrix_mappings.get(agent_name, fm.get("model", "omniroute/auto"))
         agent_desc = fm.get("description", "")
         agent_mode = fm.get("mode", "all")
 
@@ -114,6 +126,12 @@ def sync():
 
         updated_count += 1
         print(f"  [+] Synced agent '{agent_name}' -> model: '{agent_model}'")
+
+    # Apply any matrix mappings for agents not necessarily covered by skill.md files
+    for agent_name, agent_model in matrix_mappings.items():
+        if agent_name not in opencode_cfg["agent"]:
+            opencode_cfg["agent"][agent_name] = {}
+        opencode_cfg["agent"][agent_name]["model"] = agent_model
 
     # Write back updated opencode.json
     with open(opencode_json_path, "w", encoding="utf-8") as f:

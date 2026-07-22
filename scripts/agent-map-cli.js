@@ -84,10 +84,33 @@ fetchModels((rawModels) => {
   function saveMapping(agent, model) {
     if (!config.mappings) config.mappings = {};
     config.mappings[agent] = model;
+
+    // 1. Save local matrix
     const tmpPath = `${matrixPath}.tmp`;
     fs.mkdirSync(path.dirname(matrixPath), { recursive: true });
     fs.writeFileSync(tmpPath, JSON.stringify(config, null, 2));
     fs.renameSync(tmpPath, matrixPath);
+
+    // 2. Save global matrix
+    const homeDir = process.env.HOME || '';
+    const globalMatrixDir = path.join(homeDir, '.config', 'opencode');
+    const globalMatrixPath = path.join(globalMatrixDir, 'agent-models.json');
+    try {
+      fs.mkdirSync(globalMatrixDir, { recursive: true });
+      fs.writeFileSync(globalMatrixPath, JSON.stringify(config, null, 2));
+    } catch(e) {}
+
+    // 3. Sync directly into ~/.config/opencode/opencode.json
+    const opencodeJsonPath = path.join(homeDir, '.config', 'opencode', 'opencode.json');
+    if (fs.existsSync(opencodeJsonPath)) {
+      try {
+        const opencodeCfg = JSON.parse(fs.readFileSync(opencodeJsonPath, 'utf8'));
+        if (!opencodeCfg.agent) opencodeCfg.agent = {};
+        if (!opencodeCfg.agent[agent]) opencodeCfg.agent[agent] = {};
+        opencodeCfg.agent[agent].model = model;
+        fs.writeFileSync(opencodeJsonPath, JSON.stringify(opencodeCfg, null, 2));
+      } catch(e) {}
+    }
   }
 
   function promptCustomModel() {
