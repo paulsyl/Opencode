@@ -112,4 +112,39 @@ function fetchModels(callback) {
   req.on('timeout', () => { req.destroy(); callback(staticFallback); });
 }
 
-module.exports = { discoverAgents, fetchModels };
+function groupModelsByProvider(models) {
+  const groups = {
+    'Google Gemini': [],
+    'Anthropic Claude': [],
+    'DeepSeek': [],
+    'OpenAI': []
+  };
+
+  models.forEach(model => {
+    const m = model.toLowerCase();
+    if (m.includes('gemini')) {
+      groups['Google Gemini'].push(model);
+    } else if (m.includes('claude') || m.includes('anthropic') || m.includes('haiku') || m.includes('opus')) {
+      groups['Anthropic Claude'].push(model);
+    } else if (m.includes('deepseek') || m.includes('r1')) {
+      groups['DeepSeek'].push(model);
+    } else if (m.includes('gpt') || m.includes('openai') || m.includes('codex') || m.includes('o1') || m.includes('o3')) {
+      groups['OpenAI'].push(model);
+    } else {
+      const parts = model.split('/');
+      const providerName = parts.length > 1 
+        ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) 
+        : 'Other Providers';
+      if (!groups[providerName]) groups[providerName] = [];
+      groups[providerName].push(model);
+    }
+  });
+
+  Object.keys(groups).forEach(key => {
+    if (groups[key].length === 0) delete groups[key];
+  });
+
+  return groups;
+}
+
+module.exports = { discoverAgents, fetchModels, groupModelsByProvider };

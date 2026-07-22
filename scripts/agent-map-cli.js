@@ -2,7 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const { discoverAgents, fetchModels } = require('./agent-discovery.js');
+const { discoverAgents, fetchModels, groupModelsByProvider } = require('./agent-discovery.js');
 
 const matrixPath = '.agents/agent-models.json';
 let config = { mappings: {}, fallbacks: { default: 'omniroute/gemini-2.0-flash' } };
@@ -22,11 +22,16 @@ if (!process.stdin.isTTY) {
   process.exit(0);
 }
 
-fetchModels((models) => {
-  const modelOptions = [...models, '+ Enter custom model ID...'];
+fetchModels((rawModels) => {
+  const grouped = groupModelsByProvider(rawModels);
+  const providerNames = [...Object.keys(grouped), '+ Enter custom model ID...'];
+
   let agentIndex = 0;
+  let providerIndex = 0;
   let modelIndex = 0;
-  let mode = 'SELECT_AGENT'; // SELECT_AGENT | SELECT_MODEL | CUSTOM_INPUT
+  let mode = 'SELECT_AGENT'; // SELECT_AGENT | SELECT_PROVIDER | SELECT_MODEL | CUSTOM_INPUT
+  let selectedProvider = '';
+  let currentProviderModels = [];
 
   readline.emitKeypressEvents(process.stdin);
   process.stdin.setRawMode(true);
@@ -41,7 +46,7 @@ fetchModels((models) => {
     if (mode === 'CUSTOM_INPUT') return;
     console.clear();
     console.log('\x1b[36m=====================================================\x1b[0m');
-    console.log('\x1b[1m  OpenCode Agent Model Mapping Matrix (Arrow Keys)\x1b[0m');
+    console.log('\x1b[1m  OpenCode Agent Model Mapping Matrix\x1b[0m');
     console.log('\x1b[36m=====================================================\x1b[0m\n');
 
     if (mode === 'SELECT_AGENT') {
@@ -53,10 +58,21 @@ fetchModels((models) => {
         const suffix = isSelected ? '\x1b[0m' : '';
         console.log(`${prefix}${agent.padEnd(20)} -> ${currentModel}${suffix}`);
       });
-    } else {
+    } else if (mode === 'SELECT_PROVIDER') {
       const targetAgent = agents[agentIndex];
-      console.log(`Select model for \x1b[1m${targetAgent}\x1b[0m (\x1b[1m↑/↓\x1b[0m, \x1b[1mEnter\x1b[0m to save, \x1b[1mEsc\x1b[0m to cancel):\n`);
-      modelOptions.forEach((m, i) => {
+      console.log(`Persona: \x1b[1m${targetAgent}\x1b[0m`);
+      console.log('Select a Model Provider (\x1b[1m↑/↓\x1b[0m, \x1b[1mEnter\x1b[0m to select, \x1b[1mEsc\x1b[0m to go back):\n');
+      providerNames.forEach((p, i) => {
+        const isSelected = i === providerIndex;
+        const prefix = isSelected ? '\x1b[33m➔ \x1b[1m' : '  ';
+        const suffix = isSelected ? '\x1b[0m' : '';
+        console.log(`${prefix}${p}${suffix}`);
+      });
+    } else if (mode === 'SELECT_MODEL') {
+      const targetAgent = agents[agentIndex];
+      console.log(`Persona: \x1b[1m${targetAgent}\x1b[0m > Provider: \x1b[1m${selectedProvider}\x1b[0m`);
+      console.log('Select model (\x1b[1m↑/↓\x1b[0m, \x1b[1mEnter\x1b[0m to save, \x1b[1mEsc\x1b[0m to go back):\n');
+      currentProviderModels.forEach((m, i) => {
         const isSelected = i === modelIndex;
         const prefix = isSelected ? '\x1b[33m➔ \x1b[1m' : '  ';
         const suffix = isSelected ? '\x1b[0m' : '';
@@ -80,7 +96,7 @@ fetchModels((models) => {
     console.clear();
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const targetAgent = agents[agentIndex];
-    rl.question(`Enter model ID for \x1b[1m${targetAgent}\x1b[0m (e.g. omniroute/my-model): `, (answer) => {
+    rl.question(`Enter custom model ID for \x1b[1m${targetAgent}\x1b[0m (e.g. omniroute/my-model): `, (answer) => {
       rl.close();
       const trimmed = answer.trim();
       if (trimmed) {
@@ -104,24 +120,35 @@ fetchModels((models) => {
       if (key.name === 'up') { agentIndex = (agentIndex - 1 + agents.length) % agents.length; render(); }
       if (key.name === 'down') { agentIndex = (agentIndex + 1) % agents.length; render(); }
       if (key.name === 'return') {
-        const currentM = config.mappings[agents[agentIndex]];
-        const foundIdx = modelOptions.indexOf(currentM);
-        modelIndex = foundIdx >= 0 ? foundIdx : 0;
-        mode = 'SELECT_MODEL';
+        providerIndex = 0;
+        mode = 'SELECT_PROVIDER';
         render();
       }
-    } else {
+    } else if (mode === 'SELECT_PROVIDER') {
       if (key.name === 'escape' || key.name === 'q') { mode = 'SELECT_AGENT'; render(); }
-      if (key.name === 'up') { modelIndex = (modelIndex - 1 + modelOptions.length) % modelOptions.length; render(); }
-      if (key.name === 'down') { modelIndex = (modelIndex + 1) % modelOptions.length; render(); }
+      if (key.name === 'up') { providerIndex = (providerIndex - 1 + providerNames.length) % providerNames.length; render(); }
+      if (key.name === 'down') { providerIndex = (providerIndex + 1) % providerNames.length; render(); }
       if (key.name === 'return') {
-        if (modelIndex === modelOptions.length - 1) {
+        if (providerIndex === providerNames.length - 1) {
           promptCustomModel();
         } else {
-          saveMapping(agents[agentIndex], modelOptions[modelIndex]);
-          mode = 'SELECT_AGENT';
+          selectedProvider = providerNames[providerIndex];
+          currentProviderModels = grouped[selectedProvider] || [];
+          const currentM = config.mappings[agents[agentIndex]];
+          const foundIdx = currentProviderModels.indexOf(currentM);
+          modelIndex = foundIdx >= 0 ? foundIdx : 0;
+          mode = 'SELECT_MODEL';
           render();
         }
+      }
+    } else if (mode === 'SELECT_MODEL') {
+      if (key.name === 'escape' || key.name === 'q') { mode = 'SELECT_PROVIDER'; render(); }
+      if (key.name === 'up') { modelIndex = (modelIndex - 1 + currentProviderModels.length) % currentProviderModels.length; render(); }
+      if (key.name === 'down') { modelIndex = (modelIndex + 1) % currentProviderModels.length; render(); }
+      if (key.name === 'return') {
+        saveMapping(agents[agentIndex], currentProviderModels[modelIndex]);
+        mode = 'SELECT_AGENT';
+        render();
       }
     }
   });
