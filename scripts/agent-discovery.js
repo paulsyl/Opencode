@@ -7,10 +7,25 @@ function discoverAgents(workspaceRoot = process.cwd()) {
     'architect', 'executor', 'specifier-grill', 'specifier-prd', 'review-council', 'prototype'
   ]);
 
+  const homeDir = process.env.HOME || '';
+
+  // 1. Read agent keys from ~/.config/opencode/opencode.json
+  const opencodeJsonPath = path.join(homeDir, '.config', 'opencode', 'opencode.json');
+  if (fs.existsSync(opencodeJsonPath)) {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(opencodeJsonPath, 'utf8'));
+      if (cfg.agent) {
+        Object.keys(cfg.agent).forEach(a => agents.add(a));
+      }
+    } catch(e) {}
+  }
+
+  // 2. Scan skill directories for custom skills / agents
   const skillDirs = [
     path.join(workspaceRoot, '.agents', 'skills'),
     path.join(workspaceRoot, '.agents'),
-    path.join(process.env.HOME || '', '.config', 'skills')
+    path.join(homeDir, '.config', 'opencode', 'skills'),
+    path.join(homeDir, '.config', 'skills')
   ];
 
   skillDirs.forEach(dir => {
@@ -34,13 +49,19 @@ function discoverAgents(workspaceRoot = process.cwd()) {
     }
   });
 
-  const matrixPath = path.join(workspaceRoot, '.agents', 'agent-models.json');
-  if (fs.existsSync(matrixPath)) {
-    try {
-      const cfg = JSON.parse(fs.readFileSync(matrixPath, 'utf8'));
-      if (cfg.mappings) Object.keys(cfg.mappings).forEach(a => agents.add(a));
-    } catch(e) {}
-  }
+  // 3. Scan matrix config files
+  const matrixPaths = [
+    path.join(workspaceRoot, '.agents', 'agent-models.json'),
+    path.join(homeDir, '.config', 'opencode', 'agent-models.json')
+  ];
+  matrixPaths.forEach(matrixPath => {
+    if (fs.existsSync(matrixPath)) {
+      try {
+        const cfg = JSON.parse(fs.readFileSync(matrixPath, 'utf8'));
+        if (cfg.mappings) Object.keys(cfg.mappings).forEach(a => agents.add(a));
+      } catch(e) {}
+    }
+  });
 
   return Array.from(agents).sort();
 }
