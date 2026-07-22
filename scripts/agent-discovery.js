@@ -82,6 +82,10 @@ function fetchModels(callback) {
     'omniroute/claude-3-opus',
     'claude-3-5-sonnet',
     'claude-3-7-sonnet',
+    'claude-3-opus',
+    'claude-sonnet-4-6',
+    'claude-opus-4-7',
+    'claude-opus-4-8',
     'omniroute/deepseek-r1',
     'omniroute/deepseek-v3',
     'omniroute/deepseek-coder',
@@ -136,21 +140,24 @@ function groupModelsByProvider(models) {
       add('Amazon Bedrock', model);
     } else if (model.startsWith('vertex/')) {
       add('Google Vertex AI', model);
-    } else if (m.startsWith('gemini') || m.startsWith('google/') || m.includes('google')) {
-      add('Google AI Studio', model);
-    } else if (m.startsWith('claude') || m.startsWith('anthropic/') || m.includes('anthropic')) {
-      add('Anthropic', model);
-    } else if (m.startsWith('deepseek') || m.includes('deepseek')) {
-      add('DeepSeek', model);
-    } else if (m.startsWith('gpt') || m.startsWith('openai/') || m.startsWith('o1') || m.startsWith('o3')) {
-      add('OpenAI', model);
     } else {
       const parts = model.split('/');
       if (parts.length > 1) {
         const pName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
         add(pName, model);
       } else {
-        add('Other Direct Providers', model);
+        if (m.startsWith('gemini') || m.startsWith('google/') || m.includes('google')) {
+          add('Google AI (Studio & Subscriptions)', model);
+        } else if (m.startsWith('claude') || m.startsWith('anthropic/') || m.includes('anthropic') || m.includes('opus') || m.includes('sonnet')) {
+          add('Google AI (Studio & Subscriptions)', model);
+          add('Anthropic', model);
+        } else if (m.startsWith('deepseek') || m.includes('deepseek')) {
+          add('DeepSeek', model);
+        } else if (m.startsWith('gpt') || m.startsWith('openai/') || m.startsWith('o1') || m.startsWith('o3')) {
+          add('OpenAI', model);
+        } else {
+          add('Other Direct Providers', model);
+        }
       }
     }
   });
