@@ -100,6 +100,40 @@ def sync():
             if "SKILL.md" in files:
                 skill_md_files.append(os.path.join(root, "SKILL.md"))
 
+    # Ensure provider.omniroute.models exists in opencode.json
+    if "provider" not in opencode_cfg:
+        opencode_cfg["provider"] = {}
+    if "omniroute" not in opencode_cfg["provider"]:
+        opencode_cfg["provider"]["omniroute"] = {
+            "name": "OmniRoute Gateway",
+            "npm": "@ai-sdk/openai",
+            "options": {
+                "baseURL": "http://localhost:20128/v1",
+                "apiKey": "omniroute-local"
+            },
+            "models": {}
+        }
+    if "models" not in opencode_cfg["provider"]["omniroute"]:
+        opencode_cfg["provider"]["omniroute"]["models"] = {}
+
+    omni_models = opencode_cfg["provider"]["omniroute"]["models"]
+
+    def ensure_model_registered(full_model):
+        if not full_model:
+            return "omniroute/auto"
+        # If unprefixed, default to omniroute/
+        if "/" not in full_model:
+            full_model = f"omniroute/{full_model}"
+
+        provider_part, model_part = full_model.split("/", 1)
+        if provider_part == "omniroute":
+            if model_part not in omni_models:
+                omni_models[model_part] = {
+                    "name": model_part,
+                    "limit": {"context": 200000, "output": 8192}
+                }
+        return full_model
+
     updated_count = 0
     for smd in set(skill_md_files):
         fm = parse_front_matter(smd)
@@ -109,7 +143,8 @@ def sync():
         agent_name = fm["name"]
         existing_model = opencode_cfg["agent"].get(agent_name, {}).get("model")
         # Prefer matrix mapping if present, otherwise preserve existing opencode.json model or SKILL.md model
-        agent_model = matrix_mappings.get(agent_name, existing_model or fm.get("model", "omniroute/auto"))
+        raw_model = matrix_mappings.get(agent_name, existing_model or fm.get("model", "omniroute/auto"))
+        agent_model = ensure_model_registered(raw_model)
         agent_desc = fm.get("description", "")
         agent_mode = fm.get("mode", "all")
 
@@ -129,9 +164,10 @@ def sync():
         print(f"  [+] Synced agent '{agent_name}' -> model: '{agent_model}'")
 
     # Apply any matrix mappings for agents not necessarily covered by skill.md files
-    for agent_name, agent_model in matrix_mappings.items():
+    for agent_name, raw_model in matrix_mappings.items():
         if agent_name not in opencode_cfg["agent"]:
             opencode_cfg["agent"][agent_name] = {}
+        agent_model = ensure_model_registered(raw_model)
         opencode_cfg["agent"][agent_name]["model"] = agent_model
 
     # Write back updated opencode.json

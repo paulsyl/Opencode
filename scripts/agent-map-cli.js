@@ -129,7 +129,6 @@ fetchModels((rawModels) => {
     fs.renameSync(tmpPath, matrixPath);
 
     // 2. Save global matrix
-    const homeDir = process.env.HOME || '';
     const globalMatrixDir = path.join(homeDir, '.config', 'opencode');
     const globalMatrixPath = path.join(globalMatrixDir, 'agent-models.json');
     try {
@@ -144,7 +143,34 @@ fetchModels((rawModels) => {
         const opencodeCfg = JSON.parse(fs.readFileSync(opencodeJsonPath, 'utf8'));
         if (!opencodeCfg.agent) opencodeCfg.agent = {};
         if (!opencodeCfg.agent[agent]) opencodeCfg.agent[agent] = {};
-        opencodeCfg.agent[agent].model = model;
+        
+        let fullModel = model;
+        if (!fullModel.includes('/')) fullModel = `omniroute/${fullModel}`;
+
+        opencodeCfg.agent[agent].model = fullModel;
+
+        if (!opencodeCfg.provider) opencodeCfg.provider = {};
+        if (!opencodeCfg.provider.omniroute) {
+          opencodeCfg.provider.omniroute = {
+            name: "OmniRoute Gateway",
+            npm: "@ai-sdk/openai",
+            options: { baseURL: "http://localhost:20128/v1", apiKey: "omniroute-local" },
+            models: {}
+          };
+        }
+        if (!opencodeCfg.provider.omniroute.models) opencodeCfg.provider.omniroute.models = {};
+
+        const parts = fullModel.split('/', 2);
+        if (parts[0] === 'omniroute' && parts[1]) {
+          const modelKey = parts[1];
+          if (!opencodeCfg.provider.omniroute.models[modelKey]) {
+            opencodeCfg.provider.omniroute.models[modelKey] = {
+              name: modelKey,
+              limit: { context: 200000, output: 8192 }
+            };
+          }
+        }
+
         fs.writeFileSync(opencodeJsonPath, JSON.stringify(opencodeCfg, null, 2));
       } catch(e) {}
     }
