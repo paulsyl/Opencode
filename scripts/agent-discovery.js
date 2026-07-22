@@ -113,35 +113,46 @@ function fetchModels(callback) {
 }
 
 function groupModelsByProvider(models) {
-  const groups = {
-    'Google Gemini': [],
-    'Anthropic Claude': [],
-    'DeepSeek': [],
-    'OpenAI': []
-  };
+  const groups = {};
+
+  function add(provider, model) {
+    if (!groups[provider]) groups[provider] = [];
+    if (!groups[provider].includes(model)) {
+      groups[provider].push(model);
+    }
+  }
 
   models.forEach(model => {
     const m = model.toLowerCase();
-    if (m.includes('gemini')) {
-      groups['Google Gemini'].push(model);
-    } else if (m.includes('claude') || m.includes('anthropic') || m.includes('haiku') || m.includes('opus')) {
-      groups['Anthropic Claude'].push(model);
-    } else if (m.includes('deepseek') || m.includes('r1')) {
-      groups['DeepSeek'].push(model);
-    } else if (m.includes('gpt') || m.includes('openai') || m.includes('codex') || m.includes('o1') || m.includes('o3')) {
-      groups['OpenAI'].push(model);
+    if (model.startsWith('auto/')) {
+      add('Auto Combos (OmniRoute)', model);
+    } else if (model.startsWith('omniroute/')) {
+      add('OmniRoute Gateway', model);
+    } else if (model.startsWith('openrouter/')) {
+      add('OpenRouter', model);
+    } else if (model.startsWith('ollama/')) {
+      add('Ollama / Local', model);
+    } else if (model.startsWith('bedrock/')) {
+      add('Amazon Bedrock', model);
+    } else if (model.startsWith('vertex/')) {
+      add('Google Vertex AI', model);
+    } else if (m.startsWith('gemini') || m.startsWith('google/') || m.includes('google')) {
+      add('Google AI Studio', model);
+    } else if (m.startsWith('claude') || m.startsWith('anthropic/') || m.includes('anthropic')) {
+      add('Anthropic', model);
+    } else if (m.startsWith('deepseek') || m.includes('deepseek')) {
+      add('DeepSeek', model);
+    } else if (m.startsWith('gpt') || m.startsWith('openai/') || m.startsWith('o1') || m.startsWith('o3')) {
+      add('OpenAI', model);
     } else {
       const parts = model.split('/');
-      const providerName = parts.length > 1 
-        ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) 
-        : 'Other Providers';
-      if (!groups[providerName]) groups[providerName] = [];
-      groups[providerName].push(model);
+      if (parts.length > 1) {
+        const pName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+        add(pName, model);
+      } else {
+        add('Other Direct Providers', model);
+      }
     }
-  });
-
-  Object.keys(groups).forEach(key => {
-    if (groups[key].length === 0) delete groups[key];
   });
 
   return groups;
