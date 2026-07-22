@@ -135,17 +135,50 @@ if ! is_healthy; then
   fi
 fi
 
-# Persona Model Resolution with safe argument passing
+# Persona Model Resolution with First-Run Unmapped Interception
 RESOLVED_MODEL=""
-if [ -f ".agents/agent-models.json" ]; then
-  PERSONA="${1:-}"
+PERSONA="${1:-}"
+
+if [ -n "${PERSONA}" ] && [ -f ".agents/agent-models.json" ]; then
   RESOLVED_MODEL=$(node -e "
     try {
       const persona = process.argv[1];
       const cfg = JSON.parse(require('fs').readFileSync('.agents/agent-models.json'));
-      console.log(cfg.mappings[persona] || cfg.fallbacks?.default || '');
-    } catch(e) {}
+      if (cfg.mappings && cfg.mappings[persona]) {
+        console.log('MAPPED:' + cfg.mappings[persona]);
+      } else {
+        console.log('UNMAPPED:' + (cfg.fallbacks?.default || 'omniroute/gemini-2.0-flash'));
+      }
+    } catch(e) {
+      console.log('UNMAPPED:omniroute/gemini-2.0-flash');
+    }
   " "${PERSONA}" 2>/dev/null || true)
+fi
+
+if [[ "${RESOLVED_MODEL}" == UNMAPPED:* ]]; then
+  DEFAULT_FALLBACK="${RESOLVED_MODEL#UNMAPPED:}"
+  if [ -t 0 ]; then
+    echo "[!] Unmapped agent persona '${PERSONA}'. Launching interactive model selection..."
+    CLI_SCRIPT="${HOME}/.local/bin/agent-map-cli.js"
+    if [ ! -f "${CLI_SCRIPT}" ]; then CLI_SCRIPT="$(pwd)/scripts/agent-map-cli.js"; fi
+    if [ -f "${CLI_SCRIPT}" ]; then
+      node "${CLI_SCRIPT}"
+      RESOLVED_MODEL=$(node -e "
+        try {
+          const cfg = JSON.parse(require('fs').readFileSync('.agents/agent-models.json'));
+          console.log(cfg.mappings['${PERSONA}'] || '${DEFAULT_FALLBACK}');
+        } catch(e) { console.log('${DEFAULT_FALLBACK}'); }
+      " 2>/dev/null || echo "${DEFAULT_FALLBACK}")
+    else
+      RESOLVED_MODEL="${DEFAULT_FALLBACK}"
+    fi
+  else
+    echo "[!] Unmapped agent persona '${PERSONA}'. Using default model '${DEFAULT_FALLBACK}'."
+    echo "[!] Run 'opencode agent-map' to configure a designated model for '${PERSONA}'."
+    RESOLVED_MODEL="${DEFAULT_FALLBACK}"
+  fi
+elif [[ "${RESOLVED_MODEL}" == MAPPED:* ]]; then
+  RESOLVED_MODEL="${RESOLVED_MODEL#MAPPED:}"
 fi
 
 MODEL_FLAGS=()
