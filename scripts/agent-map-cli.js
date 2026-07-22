@@ -23,9 +23,10 @@ if (!process.stdin.isTTY) {
 }
 
 fetchModels((models) => {
+  const modelOptions = [...models, '+ Enter custom model ID...'];
   let agentIndex = 0;
   let modelIndex = 0;
-  let mode = 'SELECT_AGENT'; // SELECT_AGENT | SELECT_MODEL
+  let mode = 'SELECT_AGENT'; // SELECT_AGENT | SELECT_MODEL | CUSTOM_INPUT
 
   readline.emitKeypressEvents(process.stdin);
   process.stdin.setRawMode(true);
@@ -37,6 +38,7 @@ fetchModels((models) => {
   }
 
   function render() {
+    if (mode === 'CUSTOM_INPUT') return;
     console.clear();
     console.log('\x1b[36m=====================================================\x1b[0m');
     console.log('\x1b[1m  OpenCode Agent Model Mapping Matrix (Arrow Keys)\x1b[0m');
@@ -54,7 +56,7 @@ fetchModels((models) => {
     } else {
       const targetAgent = agents[agentIndex];
       console.log(`Select model for \x1b[1m${targetAgent}\x1b[0m (\x1b[1m↑/↓\x1b[0m, \x1b[1mEnter\x1b[0m to save, \x1b[1mEsc\x1b[0m to cancel):\n`);
-      models.forEach((m, i) => {
+      modelOptions.forEach((m, i) => {
         const isSelected = i === modelIndex;
         const prefix = isSelected ? '\x1b[33m➔ \x1b[1m' : '  ';
         const suffix = isSelected ? '\x1b[0m' : '';
@@ -72,9 +74,28 @@ fetchModels((models) => {
     fs.renameSync(tmpPath, matrixPath);
   }
 
+  function promptCustomModel() {
+    mode = 'CUSTOM_INPUT';
+    if (process.stdin.isTTY) process.stdin.setRawMode(false);
+    console.clear();
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const targetAgent = agents[agentIndex];
+    rl.question(`Enter model ID for \x1b[1m${targetAgent}\x1b[0m (e.g. omniroute/my-model): `, (answer) => {
+      rl.close();
+      const trimmed = answer.trim();
+      if (trimmed) {
+        saveMapping(targetAgent, trimmed);
+      }
+      if (process.stdin.isTTY) process.stdin.setRawMode(true);
+      mode = 'SELECT_AGENT';
+      render();
+    });
+  }
+
   render();
 
   process.stdin.on('keypress', (str, key) => {
+    if (mode === 'CUSTOM_INPUT') return;
     if (!key) return;
     if (key.ctrl && key.name === 'c') cleanupAndExit(0);
 
@@ -84,18 +105,23 @@ fetchModels((models) => {
       if (key.name === 'down') { agentIndex = (agentIndex + 1) % agents.length; render(); }
       if (key.name === 'return') {
         const currentM = config.mappings[agents[agentIndex]];
-        modelIndex = Math.max(0, models.indexOf(currentM));
+        const foundIdx = modelOptions.indexOf(currentM);
+        modelIndex = foundIdx >= 0 ? foundIdx : 0;
         mode = 'SELECT_MODEL';
         render();
       }
     } else {
       if (key.name === 'escape' || key.name === 'q') { mode = 'SELECT_AGENT'; render(); }
-      if (key.name === 'up') { modelIndex = (modelIndex - 1 + models.length) % models.length; render(); }
-      if (key.name === 'down') { modelIndex = (modelIndex + 1) % models.length; render(); }
+      if (key.name === 'up') { modelIndex = (modelIndex - 1 + modelOptions.length) % modelOptions.length; render(); }
+      if (key.name === 'down') { modelIndex = (modelIndex + 1) % modelOptions.length; render(); }
       if (key.name === 'return') {
-        saveMapping(agents[agentIndex], models[modelIndex]);
-        mode = 'SELECT_AGENT';
-        render();
+        if (modelIndex === modelOptions.length - 1) {
+          promptCustomModel();
+        } else {
+          saveMapping(agents[agentIndex], modelOptions[modelIndex]);
+          mode = 'SELECT_AGENT';
+          render();
+        }
       }
     }
   });

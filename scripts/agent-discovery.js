@@ -84,10 +84,13 @@ function fetchModels(callback) {
     'claude-3-7-sonnet',
     'omniroute/deepseek-r1',
     'omniroute/deepseek-v3',
+    'omniroute/deepseek-coder',
+    'omniroute/deepseek-v2.5',
     'omniroute/gpt-4o',
     'omniroute/gpt-4o-mini',
     'deepseek-chat',
-    'deepseek-reasoner'
+    'deepseek-reasoner',
+    'deepseek-coder'
   ];
 
   const req = http.get('http://localhost:20128/v1/models', { timeout: 1500 }, (res) => {
